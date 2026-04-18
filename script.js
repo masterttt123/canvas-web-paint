@@ -18,12 +18,27 @@ async function askAI(number, context) {
 
 async function askForColor(number, context) {
     let colorsRaw = await askAI(number, context);
-    var colors = colorsRaw.split("\n");
+    var colors = colorsRaw.split(/[\n,]/)
+        .map(c => c.trim())
+        .filter(c => c)
+        .map(c => c.startsWith('#') ? c : '#' + c);
     console.log(colors);
+    document.querySelector('#paintColorsHex').innerHTML = colors;
+    document.querySelector('#paintOutputColor').value = colors[0];
 }
 
 
-askForColor(4, "beach at night");
+//askForColor(4, "beach at night");
+
+const paintForm = document.querySelector('#paintForm');
+
+paintForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const number = paintForm.elements['size'].value;
+    const context = paintForm.elements['prompt'].value;
+    await askForColor(number, context);
+});
+
 class paintDataItem {
     editable = true;
     context = '';

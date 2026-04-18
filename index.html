@@ -84,6 +84,17 @@
                     <button id="paintReset">Clear</button>
                     <a download="" href="" id="paintSave" target="_blank">Save</a>
                 </div>
+
+                <form id="paintForm">
+                  <input type="number" name="size" value="3">
+                  <input type="text" name="prompt" placeholder="Insert a prompt">
+                  <input type="submit" value="Generate">
+                </form>
+                <p id="paintColorsHex"></p>
+                 <form id="paintOutput">
+                  <input type="color" id="paintOutputColor">
+                 </form>
+                
             </div>
 
             <div>
@@ -92,7 +103,6 @@
 
         </div>
     </div>
-
 </div>
 
 <script type="module" src="script.js"></script>
