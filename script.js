@@ -6,14 +6,13 @@ async function askAI(number, context) {
             model: 'llama3.1',
             stream: false,
             messages: [
-                { role: 'user', content: `Da-me apenas ${number} hexadecimal de cor que representa o ${context}, no formato de uma lista apenas, sem escrever nada` }
+                { role: 'user', content: `Answer only in a list of ${number} RGB values as hexadecimals, separated by comma and with no spaces: What colors are most related to this list of words: "${context}"` }
             ]
         })
     });
-    console.log(`Asked for ${number} colors`);
+    console.log(`Asked for ${number} colors related to "${context}"`);
 
     const data = await res.json();
-    console.log(data.message.content);
     return data.message.content;
 }
 
@@ -24,7 +23,7 @@ async function askForColor(number, context) {
 }
 
 
-askForColor(4, "tropical");
+askForColor(4, "beach at night");
 class paintDataItem {
     editable = true;
     context = '';
