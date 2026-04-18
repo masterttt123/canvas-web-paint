@@ -24,7 +24,15 @@ async function askForColor(number, context) {
         .map(c => c.startsWith('#') ? c : '#' + c);
     console.log(colors);
     document.querySelector('#paintColorsHex').innerHTML = colors;
-    document.querySelector('#paintOutputColor').value = colors[0];
+    
+    const paintOutput = document.querySelector('#paintOutput');
+    paintOutput.innerHTML = ''; // limpa os anteriores
+    colors.forEach(color => {
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.value = color;
+        paintOutput.appendChild(input);
+    });
 }
 
 
