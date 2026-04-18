@@ -1,3 +1,21 @@
+async function askAI() {
+    const res = await fetch('http://localhost:11434/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            model: 'llama3.1',
+            stream: false,
+            messages: [
+                { role: 'user', content: 'Why is the sky blue?' }
+            ]
+        })
+    });
+
+    const data = await res.json();
+    console.log(data.message.content);
+}
+
+askAI();
 class paintDataItem {
     editable = true;
     context = '';
