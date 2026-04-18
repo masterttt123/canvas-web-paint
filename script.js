@@ -1,4 +1,4 @@
-async function askAI() {
+async function askAI(number, context) {
     const res = await fetch('http://localhost:11434/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -6,16 +6,25 @@ async function askAI() {
             model: 'llama3.1',
             stream: false,
             messages: [
-                { role: 'user', content: 'Why is the sky blue?' }
+                { role: 'user', content: `Da-me apenas ${number} hexadecimal de cor que representa o ${context}, no formato de uma lista apenas, sem escrever nada` }
             ]
         })
     });
+    console.log(`Asked for ${number} colors`);
 
     const data = await res.json();
     console.log(data.message.content);
+    return data.message.content;
 }
 
-askAI();
+async function askForColor(number, context) {
+    let colorsRaw = await askAI(number, context);
+    var colors = colorsRaw.split("\n");
+    console.log(colors);
+}
+
+
+askForColor(4, "tropical");
 class paintDataItem {
     editable = true;
     context = '';
