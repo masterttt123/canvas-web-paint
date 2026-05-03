@@ -31,7 +31,9 @@ async function askForColor(number, context) {
         const input = document.createElement('input');
         input.type = 'color';
         input.value = color;
+        input.dataset.color = color;
         paintOutput.appendChild(input);
+        input.addEventListener('click', paintSelectColor);
     });
 }
 
