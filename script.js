@@ -1,4 +1,9 @@
+const dictPromptsStory ={} // prompts and colors
+
+
 async function askAI(number, context) {
+    const previousColors = dictPromptsStory[context] === undefined ? '' : dictPromptsStory[context];
+    console.log(`Previous colors for "${context}": ${previousColors}`);
     const res = await fetch('http://localhost:11434/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -6,7 +11,7 @@ async function askAI(number, context) {
             model: 'llama3.1',
             stream: false,
             messages: [
-                { role: 'user', content: `Answer only in a list of ${number} RGB values as hexadecimals, separated by comma and with no spaces: What colors are most related to this list of words: "${context}"` }
+                { role: 'user', content: `Answer only in a list of ${number} RGB values as hexadecimals, separated by comma and with no spaces: What colors are most related to this list of words: "${context}"`.concat(previousColors[context] ? ` ( use the previous colors for same prompt: ${previousColors[context]})` : '') }
             ]
         })
     });
@@ -15,6 +20,27 @@ async function askAI(number, context) {
     const data = await res.json();
     return data.message.content;
 }
+
+async function feedback(type, color, context) {
+    await fetch('http://localhost:11434/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            model: 'llama3.1',
+            stream: false,
+            feedback : type,
+            message: {
+                role: 'user', content: `The colors provided were ${type}, don't answer`
+            }
+        })
+    });
+    console.log(`AAAAAAAAAAAA ${type}`);
+    if (type === "good") {
+        dictPromptsStory[context] = color;
+        console.log(dictPromptsStory);
+    }
+}
+
 
 async function askForColor(number, context) {
     let colorsRaw = await askAI(number, context);
@@ -34,8 +60,10 @@ async function askForColor(number, context) {
         input.dataset.color = color;
         paintOutput.appendChild(input);
         input.addEventListener('click', paintSelectColor);
+        input.addEventListener('click', () => feedback("good", color, context));
     });
 }
+
 
 
 //askForColor(4, "beach at night");
@@ -178,6 +206,8 @@ function paintInit() {
 
     paintTools.forEach((tool) => tool.addEventListener('click', paintSetTool));
     paintColors.forEach((color) => color.addEventListener('click', paintSelectColor));
+    paintColors.forEach((color) => color.addEventListener('click', () => feedback("bad")));
+
     paintTabs.forEach((tab) => tab.addEventListener('click', paintSelectTab));
     paintBtn.addEventListener('click', paintToggle);
     paintAdd.addEventListener('click', paintNewTab);
