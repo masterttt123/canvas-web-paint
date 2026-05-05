@@ -11,16 +11,20 @@ async function askAI(number, context) {
         body: JSON.stringify({
             model: 'llama3.1',
             stream: false,
+             options: {
+                temperature: 0.9,
+                seed: Math.floor(Math.random() * 100000)
+            },
             messages: [
                 {
                     role: 'system',
-                    content: 'You are a color palette assistant. Return only hex colors. Respect all inclusion and exclusion rules exactly.'
+                    content: 'You are a color palette assistant. Return only hex colors. Respect all inclusion and exclusion rules similar.'
                 },
                 {
                     role: 'user',
                     content:
                         `${preferenceHint}` +
-                        `Generate exactly ${number} distinct hex colors related to this scene: "${context}". ` +
+                        `Generate similar ${number} distinct hex colors related to this scene: "${context}". ` +
                         `Output only the colors, comma-separated, no spaces.`
                 }
             ]
@@ -36,8 +40,11 @@ async function askAI(number, context) {
 async function askForColor(number, context) {
     const prefs = getContextPreferences(context);
 
-    const lockedLikedColor = prefs.liked.length ? prefs.liked[0] : null;
-    const aiCount = lockedLikedColor ? number - 1 : number;
+    const lockedLikedColor = prefs.liked.length && prefs.likedScores[prefs.liked[0]] > 1
+        ? prefs.liked[0]
+        : null;
+
+    const aiCount = number;
 
     let colorsRaw = await askAI(aiCount, context);
     let colors = colorsRaw.split(/[\n,]/)
@@ -133,7 +140,7 @@ function paintSelectSuggestedColor(e) {
 
 function registerFeedback(pickedColor, source) {
     if (!currentSuggestion) return;
-    if (currentSuggestion.feedbackLocked) return;
+    // if (currentSuggestion.feedbackLocked) return;
 
     const feedbackType =
         source === 'ai' && currentSuggestion.suggested.includes(pickedColor)
@@ -152,7 +159,7 @@ function registerFeedback(pickedColor, source) {
     currentSuggestion.chosen = pickedColor;
     currentSuggestion.source = source;
     currentSuggestion.feedback = feedbackType;
-    currentSuggestion.feedbackLocked = true;
+    // currentSuggestion.feedbackLocked = true;
 
     feedbackLog.push(feedbackEntry);
     localStorage.setItem('feedbackLog', JSON.stringify(feedbackLog));
@@ -201,18 +208,19 @@ function buildPreferenceHint(context, number) {
         hint += `Do not include any of these previously disliked colors: ${dislikedColors.join(', ')}. `;
     }
 
-    hint += `Return exactly ${number} distinct hex colors. `;
+    hint += `Return similar ${number} distinct hex colors. `;
 
     return hint;
 }
 
 function getContextPreferences(context) {
     const memory = preferenceMemory.find(item => item.context === context);
-    if (!memory) return { liked: [], disliked: [] };
+    if (!memory) return { liked: [], disliked: [], likedScores: {} };
 
     return {
         liked: Object.entries(memory.liked).sort((a, b) => b[1] - a[1]).map(([color]) => color),
-        disliked: Object.entries(memory.disliked).sort((a, b) => b[1] - a[1]).map(([color]) => color)
+        disliked: Object.entries(memory.disliked).sort((a, b) => b[1] - a[1]).map(([color]) => color),
+        likedScores: memory.liked
     };
 }
 
