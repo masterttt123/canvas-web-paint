@@ -96,16 +96,22 @@
                    <div id="paintOutput"></div>
                  </form>
                 
+                 <hr style="margin: 8px 0; opacity: 0.3;">
+                 <p style="margin: 4px 0; font-size: 12px; opacity: 0.7;">Doodle: <span id="doodleLabel">—</span></p>
+                 <div id="doodleOutput"></div>
+                 <p id="doodleColorsHex" style="font-size: 11px; opacity: 0.6;"></p>
             </div>
 
             <div>
                 <canvas id="paintDraw"></canvas>
             </div>
 
+
         </div>
     </div>
 </div>
 
+<script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
 <script type="module" src="script.js"></script>
 </body>
 
