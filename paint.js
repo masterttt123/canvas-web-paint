@@ -69,12 +69,17 @@ const paintColorCon = document.querySelector('#paintColorCon');
 const paintTools = document.querySelectorAll('#paintTools span');
 const paintColors = document.querySelectorAll('#paintColors span');
 
+// --- Definição do tamanho fixo estilo MS Paint ---
+const CANVAS_BASE_WIDTH = 800;
+const CANVAS_BASE_HEIGHT = 600;
+
 const paintQuality = 2;
 const paintFrequency = 1;
 const paintMinMovement = 5;
 // const paintCtx = paintCanvas.getContext('2d');
 const paintCtx = paintCanvas.getContext('2d', { willReadFrequently: true });
-const paintCalcQuality = (val) => val * paintQuality;
+// Multiplica pelo multiplicador de qualidade interna do teu app
+const paintCalcQuality = (val) => val * paintQuality; 
 const paintNotMove = (x, y) => {
     const x2 = Math.abs(paintLastX - x);
     const y2 = Math.abs(paintLastY - y);
@@ -138,28 +143,35 @@ export function getPaintColors() {
     return paintColors;
 }
 
-// Run once at first
 export function paintInit(startDoodleSuggestions) {
-    paintCanvas.height = paintCalcQuality(paintContainer.offsetHeight);
-    paintCanvas.width = paintCalcQuality(paintContainer.offsetWidth);
+    // 1. Define a resolução interna de alta qualidade fixa
+    paintCanvas.width = paintCalcQuality(CANVAS_BASE_WIDTH);
+    paintCanvas.height = paintCalcQuality(CANVAS_BASE_HEIGHT);
+
+    // 2. Define o tamanho visual fixo no ecrã usando CSS dinâmico
+    paintCanvas.style.width = `${CANVAS_BASE_WIDTH}px`;
+    paintCanvas.style.height = `${CANVAS_BASE_HEIGHT}px`;
+    paintCanvas.style.display = 'block';
+    paintCanvas.style.margin = '20px auto'; // Centra a "folha" no ecrã
+    paintCanvas.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'; // Sombra estilo folha
+    paintCanvas.style.border = '1px solid #ccc';
+
     paintClearTab();
     paintInitialDataUrl = paintGetDataUrl();
     paintSelectedId = 1;
     paintData[paintSelectedId] = new paintDataItem(paintInitialDataUrl);
 
-    //event listeners
+    // Event listeners
     window.addEventListener('resize', paintReSize);
     paintContainer.addEventListener('resize', paintReSize);
 
     paintBrushRange.addEventListener('input', () => {
-        const val =
-            typeof paintBrushRange.value === 'string'
-                ? parseInt(paintBrushRange.value)
-                : paintBrushRange.value;
+        const val = typeof paintBrushRange.value === 'string' ? parseInt(paintBrushRange.value) : paintBrushRange.value;
         paintBrushSize[paintCurrentTool] = val;
         paintSizeVal.innerHTML = val;
         paintCtx.lineWidth = val;
     });
+    
     paintColorInput.addEventListener('change', paintPickColor);
     paintColorInput.addEventListener('input', paintPickColor);
     paintSaveBtn.addEventListener('click', paintSaveImg);
@@ -178,19 +190,13 @@ export function paintInit(startDoodleSuggestions) {
     paintCanvas.addEventListener('touchmove', paintContinueDraw);
     paintCanvas.addEventListener('touchend', () => (paintDrawing = false));
 
-    // dentro de paintInit(), no fim
     paintCanvas.addEventListener('mousedown', startDoodleSuggestions);
     paintCanvas.addEventListener('touchstart', startDoodleSuggestions);
 }
 
 function paintReSize() {
-    try {
-        const temp = paintCtx.getImageData(0, 0, paintCanvas.width, paintCanvas.height);
-        paintCanvas.height = paintCalcQuality(paintContainer.offsetHeight);
-        paintCanvas.width = paintCalcQuality(paintContainer.offsetWidth);
-        paintCtx.putImageData(temp, 0, 0);
-    } catch {
-    }
+    // Como o tamanho agora é fixo, JÁ NÃO apagamos nem alteramos o tamanho do canvas!
+    // Apenas garantimos que as propriedades do pincel não se perdem.
     paintCtx.lineWidth = paintBrushSize[paintCurrentTool];
     paintSizeVal.innerHTML = paintBrushSize[paintCurrentTool];
     paintBrushRange.value = paintBrushSize[paintCurrentTool];
