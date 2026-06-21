@@ -77,7 +77,6 @@ const CANVAS_BASE_HEIGHT = 600; //768;
 const paintQuality = 2;
 const paintFrequency = 1;
 const paintMinMovement = 5;
-// const paintCtx = paintCanvas.getContext('2d');
 const paintCtx = paintCanvas.getContext('2d', { willReadFrequently: true });
 // Multiplica pelo multiplicador de qualidade interna do teu app
 const paintCalcQuality = (val) => val * paintQuality; 
@@ -154,7 +153,7 @@ export function paintInit(startDoodleSuggestions) {
     paintCanvas.style.height = `${CANVAS_BASE_HEIGHT}px`;
     paintCanvas.style.display = 'block';
     paintCanvas.style.margin = '20px auto'; // Centra a "folha" no ecrã
-    paintCanvas.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'; // Sombra estilo folha
+    paintCanvas.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
     paintCanvas.style.border = '1px solid #ccc';
 
     paintClearTab();
