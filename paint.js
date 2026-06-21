@@ -70,8 +70,9 @@ const paintTools = document.querySelectorAll('#paintTools span');
 const paintColors = document.querySelectorAll('#paintColors span');
 
 // --- Definição do tamanho fixo estilo MS Paint ---
-const CANVAS_BASE_WIDTH = 800;
-const CANVAS_BASE_HEIGHT = 600;
+const CANVAS_BASE_WIDTH = 800; //1000;
+const CANVAS_BASE_HEIGHT = 600; //768;
+
 
 const paintQuality = 2;
 const paintFrequency = 1;
@@ -92,9 +93,9 @@ const paintEditChangeEvent = paintEditChangeEventMaster.subscription;
 
 let paintData = {};
 let paintBrushSize = {
-    pencil: 15,
+    pencil: 72,
     eraser: 100,
-    brush: 15,
+    brush: 72,
 };
 let paintCurrentLineCap = 'round';
 let paintDrawing = false;
