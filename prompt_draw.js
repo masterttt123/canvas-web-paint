@@ -1270,7 +1270,7 @@ export function drawPlanOnCanvas(plan) {
   const canvas = getPaintCanvas();
 
   if (!ctx || !canvas) {
-    throw new Error('Canvas não disponível.');
+    throw new Error('Canvas not Available.');
   }
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1333,26 +1333,26 @@ export function initPromptDraw() {
 
     const prompt = input.value.trim();
     if (!prompt) {
-      status.textContent = 'Escreve uma prompt primeiro.';
+      status.textContent = 'Write prompt first.';
       return;
     }
 
-    status.textContent = 'A gerar sketch...';
+    status.textContent = 'Generating Sketch...';
 
     try {
       const plan = await generateDrawingFromPrompt(prompt);
       console.log('Generated drawing plan:', plan);
-      status.textContent = 'Sketch gerado. Já podes continuar a editar no canvas.';
+      status.textContent = 'Sketch Generated. You can edit it on Canvas.';
     } catch (err) {
       console.error('Prompt draw error:', err);
-      status.textContent = 'Erro a gerar sketch. Ver consola para detalhes.';
+      status.textContent = 'Error Generating Sketch. See console for details.';
     }
   });
 
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
       clearPromptSketch();
-      status.textContent = 'Canvas limpo.';
+      status.textContent = 'Canvas Clear.';
     });
   }
 }
