@@ -70,8 +70,8 @@ const paintTools = document.querySelectorAll('#paintTools span');
 const paintColors = document.querySelectorAll('#paintColors span');
 
 // --- Definição do tamanho fixo estilo MS Paint ---
-const CANVAS_BASE_WIDTH = 800; //1000;
-const CANVAS_BASE_HEIGHT = 600; //768;
+const CANVAS_BASE_WIDTH = 1000;
+const CANVAS_BASE_HEIGHT = 768;
 
 
 const paintQuality = 2;
@@ -79,7 +79,7 @@ const paintFrequency = 1;
 const paintMinMovement = 5;
 const paintCtx = paintCanvas.getContext('2d', { willReadFrequently: true });
 // Multiplica pelo multiplicador de qualidade interna do teu app
-const paintCalcQuality = (val) => val * paintQuality; 
+const paintCalcQuality = (val) => val * paintQuality;
 const paintNotMove = (x, y) => {
     const x2 = Math.abs(paintLastX - x);
     const y2 = Math.abs(paintLastY - y);
@@ -92,9 +92,9 @@ const paintEditChangeEvent = paintEditChangeEventMaster.subscription;
 
 let paintData = {};
 let paintBrushSize = {
-    pencil: 72,
+    pencil: 85,
     eraser: 100,
-    brush: 72,
+    brush: 85,
 };
 let paintCurrentLineCap = 'round';
 let paintDrawing = false;
@@ -171,7 +171,7 @@ export function paintInit(startDoodleSuggestions) {
         paintSizeVal.innerHTML = val;
         paintCtx.lineWidth = val;
     });
-    
+
     paintColorInput.addEventListener('change', paintPickColor);
     paintColorInput.addEventListener('input', paintPickColor);
     paintSaveBtn.addEventListener('click', paintSaveImg);
@@ -185,13 +185,25 @@ export function paintInit(startDoodleSuggestions) {
 
     paintCanvas.addEventListener('mousedown', paintStartDraw);
     paintCanvas.addEventListener('mousemove', paintContinueDraw);
-    paintCanvas.addEventListener('mouseup', () => (paintDrawing = false));
+
+    // --- CÓDIGO ATUALIZADO E CORRETO ---
+    paintCanvas.addEventListener('mousedown', paintStartDraw);
+    paintCanvas.addEventListener('mousemove', paintContinueDraw);
+
+    // Quando o utilizador larga o rato, para de desenhar E inicia a contagem de 0.3s da IA
+    paintCanvas.addEventListener('mouseup', () => {
+        paintDrawing = false;
+        if (startDoodleSuggestions) startDoodleSuggestions();
+    });
+
     paintCanvas.addEventListener('touchstart', paintStartDraw);
     paintCanvas.addEventListener('touchmove', paintContinueDraw);
-    paintCanvas.addEventListener('touchend', () => (paintDrawing = false));
 
-    paintCanvas.addEventListener('mousedown', startDoodleSuggestions);
-    paintCanvas.addEventListener('touchstart', startDoodleSuggestions);
+    // O mesmo comportamento inteligente para ecrãs táteis
+    paintCanvas.addEventListener('touchend', () => {
+        paintDrawing = false;
+        if (startDoodleSuggestions) startDoodleSuggestions();
+    });
 }
 
 function paintReSize() {
