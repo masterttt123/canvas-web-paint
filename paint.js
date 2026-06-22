@@ -107,6 +107,17 @@ let paintCycles = paintFrequency;
 let paintTabs = getPaintTabs();
 let paintTabsCreated = 1;
 
+// Adiciona junto às outras variáveis no topo do ficheiro
+let currentDrawingPoints = []; // guarda {x, y} absolutos do desenho atual
+
+export function getCurrentDrawingPoints() {
+    return currentDrawingPoints;
+}
+
+export function clearCurrentDrawingPoints() {
+    currentDrawingPoints = [];
+}
+
 export function getPaintCanvas() {
     return paintCanvas;
 }
@@ -141,6 +152,18 @@ export function getPaintBackground() {
 
 export function getPaintColors() {
     return paintColors;
+}
+
+// no paint.js, junto às outras funções exportadas
+export async function setPaintImageFromDataUrl(dataUrl) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            paintCtx.drawImage(img, 0, 0, paintCanvas.width, paintCanvas.height);
+            resolve();
+        };
+        img.src = dataUrl;
+    });
 }
 
 export function paintInit(startDoodleSuggestions) {
@@ -192,7 +215,10 @@ export function paintInit(startDoodleSuggestions) {
 
     // Quando o utilizador larga o rato, para de desenhar E inicia a contagem de 0.3s da IA
     paintCanvas.addEventListener('mouseup', () => {
-        paintDrawing = false;
+    paintDrawing = false;
+        if (currentDrawingPoints.length > 0) {
+            currentDrawingPoints[currentDrawingPoints.length - 1].penUp = true;
+        }
         if (startDoodleSuggestions) startDoodleSuggestions();
     });
 
@@ -202,6 +228,9 @@ export function paintInit(startDoodleSuggestions) {
     // O mesmo comportamento inteligente para ecrãs táteis
     paintCanvas.addEventListener('touchend', () => {
         paintDrawing = false;
+        if (currentDrawingPoints.length > 0) {
+            currentDrawingPoints[currentDrawingPoints.length - 1].penUp = true;
+        }
         if (startDoodleSuggestions) startDoodleSuggestions();
     });
 }
@@ -235,6 +264,8 @@ function paintContinueDraw(e) {
         return
     }
 
+    currentDrawingPoints.push({ x, y, penUp: false });
+
     paintCtx.beginPath();
     paintCtx.moveTo(paintLastX, paintLastY);
     paintCtx.lineTo(x, y);
@@ -254,6 +285,9 @@ function paintStartDraw(e) {
     paintDrawing = true;
     paintLastX = paintCalcQuality(e.touches ? e.touches[0].pageX - paintRect.left : e.offsetX);
     paintLastY = paintCalcQuality(e.touches ? e.touches[0].pageY - paintRect.top : e.offsetY);
+
+    currentDrawingPoints.push({ x: paintLastX, y: paintLastY, penUp: false });
+
     paintCtx.beginPath();
     paintCtx.moveTo(paintLastX, paintLastY);
     paintCtx.lineTo(paintLastX, paintLastY);

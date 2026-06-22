@@ -86,20 +86,24 @@
                 </div>
 
                 <form id="paintForm">
-                  <input type="number" name="size" value="3">
-                  <input type="text" name="prompt" placeholder="Insert a prompt">
-                  <input type="submit" value="Generate">
+                    <input type="number" name="size" value="3">
+                    <input type="text" name="prompt" placeholder="Insert a prompt">
+                    <input type="submit" value="Generate">
                 </form>
                 <p id="paintColorsHex"></p>
-                 <form id="paintOutput">
-                  <!-- <input type="color" id="paintOutputColor"> -->
-                   <div id="paintOutput"></div>
-                 </form>
+                    <form id="paintOutput">
+                    <!-- <input type="color" id="paintOutputColor"> -->
+                    <div id="paintOutput"></div>
+                    </form>
                 
-                 <hr style="margin: 8px 0; opacity: 0.3;">
-                 <p style="margin: 4px 0; font-size: 12px; opacity: 0.7;">Doodle: <span id="doodleLabel">—</span></p>
-                 <div id="doodleOutput"></div>
-                 <p id="doodleColorsHex" style="font-size: 11px; opacity: 0.6;"></p>
+                    <hr style="margin: 8px 0; opacity: 0.3;">
+                    <p style="margin: 4px 0; font-size: 12px; opacity: 0.7;">Doodle: <span id="doodleLabel">—</span></p>
+                    <div id="doodleOutput"></div>
+                    <p id="doodleColorsHex" style="font-size: 11px; opacity: 0.6;"></p>
+                    <button id="autocompleteBtn" type="button" style="width: 100%; padding: 10px; margin: 8px 0; background-color: #ff0077; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                        IA Completar Desenho
+                    </button>
+
             </div>
 
             <div>

@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8" />
+    <title>IA a Completar Desenho</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        #status {
+            margin: 12px 0;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        canvas {
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        }
+        button {
+            margin-top: 16px;
+            padding: 10px 20px;
+            background: #ff0077;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        button.secondary {
+            background: #444;
+        }
+        .row {
+            display: flex;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h2>✨ A IA da Google está a completar o teu desenho</h2>
+    <p id="status">A carregar...</p>
+    <canvas id="magentaCanvas" width="600" height="600"></canvas>
+    <div class="row">
+        <button id="regenerateBtn" disabled>🔁 Tentar de novo</button>
+        <button id="applyBtn" disabled class="secondary">✅ Copiar para o Paint</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@magenta/sketch"></script>
+    <script>
+        const statusEl = document.querySelector('#status');
+        const canvas = document.querySelector('#magentaCanvas');
+        const ctx = canvas.getContext('2d');
+        const regenerateBtn = document.querySelector('#regenerateBtn');
+        const applyBtn = document.querySelector('#applyBtn');
+
+        let model = null;
+        let inputLabel = null;
+        let inputCanvasDataUrl = null;
+
+        function normalizeCategoryName(label) {
+            return label.toLowerCase().trim().replace(/\s+/g, '_');
+        }
+
+        function setStatus(msg) {
+            statusEl.textContent = msg;
+            console.log(msg);
+        }
+
+        async function loadInputDrawing() {
+            inputLabel = localStorage.getItem('magenta_input_label');
+            inputCanvasDataUrl = localStorage.getItem('magenta_input_canvas');
+
+            if (!inputLabel) {
+                setStatus('❌ Nenhum desenho recebido. Volta ao Paint e clica em "IA Completar Desenho" outra vez.');
+                return false;
+            }
+
+            // Desenha o input do utilizador de fundo, em cinza claro, como referência
+            if (inputCanvasDataUrl) {
+                await new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        ctx.globalAlpha = 0.15;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        ctx.globalAlpha = 1.0;
+                        resolve();
+                    };
+                    img.src = inputCanvasDataUrl;
+                });
+            }
+
+            return true;
+        }
+
+        async function loadModel(name) {
+            setStatus(`🤖 A descarregar o cérebro da IA para "${name}"...`);
+            model = new ms.SketchRNN(
+                `https://storage.googleapis.com/quickdraw-models/sketchRNN/models/${name}.gen.json`
+            );
+            await model.initialize();
+            setStatus(`✅ Modelo "${name}" pronto! A desenhar...`);
+        }
+
+        function drawWithMagenta() {
+            ctx.strokeStyle = '#ff0077';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+
+            let x = canvas.width / 2;
+            let y = canvas.height / 2;
+
+            // Escala do modelo: controla o tamanho dos traços gerados
+            model.setPixelFactor(3.0);
+
+            // Estado inicial correto (API oficial, não "reset")
+            let [dx, dy, pen_down, pen_up, pen_end] = model.zeroInput();
+            let rnn_state = model.zeroState();
+            let prev_pen = [1, 0, 0];
+
+            const temperature = 0.45; // incerteza do modelo, valor oficial recomendado
+            const MAX_STEPS = 250;
+            let step = 0;
+
+            function drawStep() {
+                // Termina se o pen_end anterior indicava fim do desenho
+                if (prev_pen[2] === 1) {
+                    setStatus('✨ A IA terminou o desenho!');
+                    applyBtn.disabled = false;
+                    regenerateBtn.disabled = false;
+                    return;
+                }
+
+                if (step >= MAX_STEPS) {
+                    setStatus('✨ Desenho terminado (limite de passos atingido).');
+                    applyBtn.disabled = false;
+                    regenerateBtn.disabled = false;
+                    return;
+                }
+                step++;
+
+                rnn_state = model.update([dx, dy, pen_down, pen_up, pen_end], rnn_state);
+                const pdf = model.getPDF(rnn_state, temperature);
+                [dx, dy, pen_down, pen_up, pen_end] = model.sample(pdf);
+
+                if (prev_pen[0] === 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + dx, y + dy);
+                    ctx.stroke();
+                }
+
+                x += dx;
+                y += dy;
+
+                prev_pen = [pen_down, pen_up, pen_end];
+
+                requestAnimationFrame(drawStep);
+            }
+
+            drawStep();
+        }
+
+        async function run() {
+            const ok = await loadInputDrawing();
+            if (!ok) return;
+
+            const name = normalizeCategoryName(inputLabel);
+
+            try {
+                await loadModel(name);
+                drawWithMagenta();
+            } catch (err) {
+                console.error(err);
+                setStatus(`❌ A IA ainda não sabe desenhar "${name}". Tenta: cat, flower, dog, face, butterfly, spider.`);
+            }
+        }
+
+        regenerateBtn.addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            applyBtn.disabled = true;
+            regenerateBtn.disabled = true;
+            loadInputDrawing().then(() => drawWithMagenta());
+        });
+
+        applyBtn.addEventListener('click', () => {
+            const resultDataUrl = canvas.toDataURL('image/png');
+            localStorage.setItem('magenta_output_canvas', resultDataUrl);
+            setStatus('✅ Copiado! Volta à aba do Paint e clica em "Aplicar ao Canvas".');
+            applyBtn.disabled = true;
+        });
+
+        // Inicializa o fundo branco antes de tudo
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        run();
+    </script>
+</body>
+</html>
