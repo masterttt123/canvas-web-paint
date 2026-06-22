@@ -341,3 +341,58 @@
 .paintRangeSlider #sizeVal {
   font-size: 16px;
 }
+
+#promptDrawPanel {
+  max-width: 1100px;
+  margin: 12px auto 0;
+  padding: 12px 16px;
+  background: #eef1ff;
+  border: 1px solid #c7d0f5;
+  border-radius: 14px;
+}
+
+#promptDrawPanel h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+#promptDrawPanel p {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+#promptDrawForm {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#promptDrawInput {
+  flex: 1 1 320px;
+  min-width: 220px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #9aa7d8;
+  font-size: 14px;
+}
+
+#promptDrawForm button {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #2f3a5f;
+  background: #333c4d;
+  color: #fff;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#promptDrawForm button:hover {
+  background: #222833;
+}
+
+#promptDrawStatus {
+  margin-top: 10px;
+  min-height: 20px;
+  font-size: 14px;
+  color: #233;
+}
