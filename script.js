@@ -44,3 +44,4 @@ async function checkForMagentaResult() {
         setTimeout(() => { label.textContent = original; }, 2000);
     }
 }
+initPromptDraw();
