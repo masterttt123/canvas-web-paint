@@ -11,7 +11,23 @@
 
 <body>
 <div style="position: absolute; top: 8px; left: 8px; right: 8px; bottom: 8px; overflow: hidden;">
+    <section id="promptDrawPanel">
+    <h2>Prompt - Sketch Generation</h2>
+    <p>Write a simple description, example: "a sunny house with a tree".</p>
 
+    <form id="promptDrawForm">
+        <input
+        id="promptDrawInput"
+        type="text"
+        placeholder="Ex.: a flower in a vase"
+        autocomplete="off"
+        />
+        <button type="submit">Generate Sketch</button>
+        <button type="button" id="promptDrawClear">Clear</button>
+    </form>
+
+    <div id="promptDrawStatus"></div>
+    </section>
     <div id="paintPage">
         <div id="paintTabs">
             <ul id="paintTabsCon">
