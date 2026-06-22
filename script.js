@@ -39,7 +39,7 @@ async function checkForMagentaResult() {
     const label = document.querySelector('#doodleLabel');
     if (label) {
         const original = label.textContent;
-        label.textContent = '✅ Desenho da IA aplicado!';
+        label.textContent = 'AI autocomplet done!';
         setTimeout(() => { label.textContent = original; }, 2000);
     }
 }

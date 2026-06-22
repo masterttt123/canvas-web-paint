@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="pt">
+<html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>IA a Completar Desenho</title>
+    <title>AI Completing Drawing</title>
     <style>
         body {
             font-family: system-ui, sans-serif;
@@ -48,12 +48,12 @@
     </style>
 </head>
 <body>
-    <h2>✨ A IA da Google está a completar o teu desenho</h2>
-    <p id="status">A carregar...</p>
+    <h2>✨ Google's AI is completing your drawing</h2>
+    <p id="status">Loading...</p>
     <canvas id="magentaCanvas" width="600" height="600"></canvas>
     <div class="row">
-        <button id="regenerateBtn" disabled>🔁 Tentar de novo</button>
-        <button id="applyBtn" disabled class="secondary">✅ Copiar para o Paint</button>
+        <button id="regenerateBtn" disabled>🔁 Try again</button>
+        <button id="applyBtn" disabled class="secondary">✅ Copy to Paint</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@magenta/sketch"></script>
@@ -152,14 +152,14 @@
             inputCanvasDataUrl = localStorage.getItem('magenta_input_canvas');
             inputPoints = JSON.parse(localStorage.getItem('magenta_input_points') || '[]');
 
-            console.log(`📥 Pontos recebidos do desenho: ${inputPoints.length}`);
+            console.log(`📥 Points received from drawing: ${inputPoints.length}`);
 
             if (!inputLabel) {
-                setStatus('❌ Nenhum desenho recebido. Volta ao Paint e clica em "IA Completar Desenho" outra vez.');
+                setStatus('❌ No drawing received. Go back to Paint and click "AI Complete Drawing" again.');
                 return false;
             }
 
-            // Desenha o input do utilizador de fundo, em cinza claro, como referência
+            // Draw the user's input in the background, in light gray, as a reference
             if (inputCanvasDataUrl) {
                 await new Promise((resolve) => {
                     const img = new Image();
@@ -177,12 +177,12 @@
         }
 
         async function loadModel(name) {
-            setStatus(`🤖 A descarregar o cérebro da IA para "${name}"...`);
+            setStatus(`🤖 Downloading the AI's brain for "${name}"...`);
             model = new ms.SketchRNN(
                 `https://storage.googleapis.com/quickdraw-models/sketchRNN/models/${name}.gen.json`
             );
             await model.initialize();
-            setStatus(`✅ Modelo "${name}" pronto!`);
+            setStatus(`✅ Model "${name}" ready!`);
         }
 
         // Converte os pontos absolutos {x, y, penUp} (no espaço do canvas principal)
@@ -196,7 +196,7 @@
             const epsilon = 6.0; // valor inicial razoável para um canvas de ~2000px de largura
 
             const simplified = rdpSimplify(rawPoints, epsilon);
-            console.log(`📐 Pontos: ${rawPoints.length} → ${simplified.length} após simplificação RDP`);
+            console.log(`📐 Points: ${rawPoints.length} → ${simplified.length} after RDP simplification`);
 
             const strokes = [];
             for (let i = 1; i < simplified.length; i++) {
@@ -238,7 +238,7 @@
             let y = startY;
 
             if (userStrokes.length > 0) {
-                setStatus(`🧠 A IA está a "ler" o teu desenho (${userStrokes.length} traços simplificados)...`);
+                setStatus(`🧠 The AI is "reading" your drawing (${userStrokes.length} simplified strokes)...`);
                 for (const stroke of userStrokes) {
                     // Os deltas aqui ainda estão em pixels "brutos" do teu canvas grande;
                     // o pixelFactor do modelo trata da escala internamente.
@@ -247,10 +247,10 @@
                 }
                 prev_pen = [pen_down, pen_up, pen_end];
             } else {
-                console.warn('⚠️ Nenhum stroke do utilizador recebido — a IA vai gerar do zero.');
+                console.warn('⚠️ No user strokes received — the AI will generate from scratch.');
             }
 
-            setStatus('✨ A IA está a continuar o teu desenho...');
+            setStatus('✨ The AI is continuing your drawing...');
 
             const temperature = 0.4; // um pouco mais baixo = menos caótico, mais fiel ao contexto
             const MAX_STEPS = 250;
@@ -258,13 +258,13 @@
 
             function drawStep() {
                 if (prev_pen[2] === 1) {
-                    setStatus('✨ A IA terminou o desenho!');
+                    setStatus('✨ The AI has finished the drawing!');
                     applyBtn.disabled = false;
                     regenerateBtn.disabled = false;
                     return;
                 }
                 if (step >= MAX_STEPS) {
-                    setStatus('✨ Desenho terminado (limite de passos atingido).');
+                    setStatus('✨ Drawing finished (step limit reached).');
                     applyBtn.disabled = false;
                     regenerateBtn.disabled = false;
                     return;
@@ -303,7 +303,7 @@
                 drawWithMagenta();
             } catch (err) {
                 console.error(err);
-                setStatus(`❌ A IA ainda não sabe desenhar "${name}". Tenta: cat, flower, dog, face, butterfly, spider.`);
+                setStatus(`❌ The AI doesn't know how to draw "${name}" yet. Try: cat, flower, dog, face, butterfly, spider.`);
             }
         }
 
@@ -319,7 +319,7 @@
         applyBtn.addEventListener('click', () => {
             const resultDataUrl = canvas.toDataURL('image/png');
             localStorage.setItem('magenta_output_canvas', resultDataUrl);
-            setStatus('✅ Copiado! Volta à aba do Paint — vai aplicar-se automaticamente.');
+            setStatus('✅ Copied! Go back to the Paint tab — it will be applied automatically.');
             applyBtn.disabled = true;
         });
 
