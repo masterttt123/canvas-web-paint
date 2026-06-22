@@ -48,12 +48,12 @@
     </style>
 </head>
 <body>
-    <h2>✨ Google's AI is completing your drawing</h2>
+    <h2>The AI is completing your drawing</h2>
     <p id="status">Loading...</p>
     <canvas id="magentaCanvas" width="600" height="600"></canvas>
     <div class="row">
-        <button id="regenerateBtn" disabled>🔁 Try again</button>
-        <button id="applyBtn" disabled class="secondary">✅ Copy to Paint</button>
+        <button id="regenerateBtn" disabled>Generate again</button>
+        <button id="applyBtn" disabled class="secondary">Accept changes</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@magenta/sketch"></script>
@@ -152,10 +152,10 @@
             inputCanvasDataUrl = localStorage.getItem('magenta_input_canvas');
             inputPoints = JSON.parse(localStorage.getItem('magenta_input_points') || '[]');
 
-            console.log(`📥 Points received from drawing: ${inputPoints.length}`);
+            console.log(`Points received from drawing: ${inputPoints.length}`);
 
             if (!inputLabel) {
-                setStatus('❌ No drawing received. Go back to Paint and click "AI Complete Drawing" again.');
+                setStatus('No drawing received. Go back to Paint and click "AI Complete Drawing" again.');
                 return false;
             }
 
@@ -177,12 +177,12 @@
         }
 
         async function loadModel(name) {
-            setStatus(`🤖 Downloading the AI's brain for "${name}"...`);
+            setStatus(`Downloading the AI's brain for "${name}"...`);
             model = new ms.SketchRNN(
                 `https://storage.googleapis.com/quickdraw-models/sketchRNN/models/${name}.gen.json`
             );
             await model.initialize();
-            setStatus(`✅ Model "${name}" ready!`);
+            setStatus(`Model sketchRNN for "${name}" ready!`);
         }
 
         // Converte os pontos absolutos {x, y, penUp} (no espaço do canvas principal)
@@ -193,7 +193,7 @@
 
             // Epsilon proporcional ao tamanho do teu canvas — ajusta se necessário.
             // O paper usa epsilon=2.0 num espaço de ~255px; o teu canvas é maior, escala-se proporcionalmente.
-            const epsilon = 6.0; // valor inicial razoável para um canvas de ~2000px de largura
+            const epsilon = 3.5; // valor inicial razoável para um canvas de ~2000px de largura
 
             const simplified = rdpSimplify(rawPoints, epsilon);
             console.log(`📐 Points: ${rawPoints.length} → ${simplified.length} after RDP simplification`);
@@ -221,8 +221,8 @@
         }
 
         function drawWithMagenta() {
-            ctx.strokeStyle = '#ff0077';
-            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 20;
             ctx.lineCap = 'round';
 
             // Deixa o modelo escalar — usa um valor moderado, 3.0 é o recomendado pela demo oficial
@@ -238,7 +238,7 @@
             let y = startY;
 
             if (userStrokes.length > 0) {
-                setStatus(`🧠 The AI is "reading" your drawing (${userStrokes.length} simplified strokes)...`);
+                setStatus(`The AI is "reading" your drawing (${userStrokes.length} simplified strokes)...`);
                 for (const stroke of userStrokes) {
                     // Os deltas aqui ainda estão em pixels "brutos" do teu canvas grande;
                     // o pixelFactor do modelo trata da escala internamente.
@@ -247,24 +247,24 @@
                 }
                 prev_pen = [pen_down, pen_up, pen_end];
             } else {
-                console.warn('⚠️ No user strokes received — the AI will generate from scratch.');
+                console.warn('No user strokes received — the AI will generate from scratch.');
             }
 
-            setStatus('✨ The AI is continuing your drawing...');
+            setStatus('The AI is continuing your drawing...');
 
-            const temperature = 0.4; // um pouco mais baixo = menos caótico, mais fiel ao contexto
-            const MAX_STEPS = 250;
+            const temperature = 0.2; // um pouco mais baixo = menos caótico, mais fiel ao contexto
+            const MAX_STEPS = 350;
             let step = 0;
 
             function drawStep() {
                 if (prev_pen[2] === 1) {
-                    setStatus('✨ The AI has finished the drawing!');
+                    setStatus('The AI has finished the drawing!');
                     applyBtn.disabled = false;
                     regenerateBtn.disabled = false;
                     return;
                 }
                 if (step >= MAX_STEPS) {
-                    setStatus('✨ Drawing finished (step limit reached).');
+                    setStatus('The AI has finished the drawing (step limit reached).');
                     applyBtn.disabled = false;
                     regenerateBtn.disabled = false;
                     return;
@@ -303,7 +303,7 @@
                 drawWithMagenta();
             } catch (err) {
                 console.error(err);
-                setStatus(`❌ The AI doesn't know how to draw "${name}" yet. Try: cat, flower, dog, face, butterfly, spider.`);
+                setStatus(`The AI doesn't know how to draw "${name}" yet. Try: cat, flower, dog, face, butterfly, spider.`);
             }
         }
 
@@ -319,7 +319,7 @@
         applyBtn.addEventListener('click', () => {
             const resultDataUrl = canvas.toDataURL('image/png');
             localStorage.setItem('magenta_output_canvas', resultDataUrl);
-            setStatus('✅ Copied! Go back to the Paint tab — it will be applied automatically.');
+            setStatus('Copied! Go back to the Paint tab — it will be applied automatically.');
             applyBtn.disabled = true;
         });
 

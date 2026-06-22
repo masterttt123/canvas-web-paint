@@ -469,6 +469,7 @@ function paintClearTab(e) {
         if (!confirm('Are you sure you want to clear the page?')) return;
         paintCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
     }
+    clearCurrentDrawingPoints(); //  Limpa os pontos armazenados
 
     paintCtx.fillStyle = paintBackground;
     paintCtx.lineCap = paintCurrentLineCap;
