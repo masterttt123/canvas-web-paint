@@ -11,7 +11,7 @@ ml5.imageClassifier('DoodleNet').then(c => {
     console.log('DoodleNet ready');
 });
 
-async function updateDoodleColors() {
+export async function updateDoodleColors() {
     if (!classifier) return;
     if (getPaintInitialDataUrl() === getPaintDataUrl()) return;
 

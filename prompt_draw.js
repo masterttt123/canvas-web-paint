@@ -1,4 +1,5 @@
 import { getPaintCtx, getPaintCanvas } from './paint.js';
+import { updateDoodleColors } from './doodle.js';
 
 const INTENT_SCHEMA = {
   type: 'object',
@@ -1306,6 +1307,9 @@ export async function generateDrawingFromPrompt(prompt) {
   console.log('Generated heuristic drawing plan:', plan);
 
   drawPlanOnCanvas(plan);
+
+  updateDoodleColors()
+
   return plan;
 }
 
