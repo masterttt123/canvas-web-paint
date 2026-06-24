@@ -107,25 +107,35 @@
                     <input type="submit" value="Generate">
                 </form>
                 <p id="paintColorsHex"></p>
-                    <form id="paintOutput">
+                <form id="paintOutput">
                     <!-- <input type="color" id="paintOutputColor"> -->
                     <div id="paintOutput"></div>
-                    </form>
+                </form>
                 
-                    <hr style="margin: 8px 0; opacity: 0.3;">
-                    <p style="margin: 4px 0; font-size: 12px; opacity: 0.7;">Doodle: <span id="doodleLabel">—</span></p>
-                    <div id="doodleOutput"></div>
-                    <p id="doodleColorsHex" style="font-size: 11px; opacity: 0.6;"></p>
-                    <button id="autocompleteBtn" type="button" style="width: 100%; padding: 10px; margin: 8px 0; background-color: #ff0077; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
-                        AI Autocomplete
+                <hr style="margin: 8px 0; opacity: 0.3;">
+                <p style="margin: 4px 0; font-size: 12px; opacity: 0.7;">Doodle for canvas: <span id="doodleLabel">—</span></p>
+                <div id="doodleOutput"></div>
+                <p id="doodleColorsHex" style="font-size: 11px; opacity: 0.6;"></p>
+                <button id="autocompleteBtn" type="button" style="width: 50%; padding: 10px; margin: 8px 0; background-color: #ff0077; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
+                    AI Autocomplete
+                </button>
+                    
+                <hr style="margin: 8px 0; opacity: 0.3;">
+                <div id="paintWebcamCon" style="margin-top: 10px; text-align: center;">
+                    <p style="margin: 4px 0; font-size: 12px; opacity: 0.7;">Webcam</p>
+                    <button id="webcamToggleBtn" type="button" style="width: 50%; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.2s;">
+                        Turn on Webcam
                     </button>
+                    <video id="paintWebcam" autoplay playsinline style="width: 100%; max-width: 100%; margin-top: 8px; border-radius: 4px; display: none; transform: scaleX(-1); border: 1px solid #ccc; background-color: #000;"></video>
+                    <p style="margin: 4px 0; font-size: 12px; opacity: 0.7;">Doodle for webcam: <span id="doodleLabel2">—</span></p>
+                </div>
+
 
             </div>
 
             <div>
                 <canvas id="paintDraw"></canvas>
             </div>
-
 
         </div>
     </div>

@@ -68,6 +68,9 @@ const paintTabsCon = document.querySelector('#paintTabsCon');
 const paintColorCon = document.querySelector('#paintColorCon');
 const paintTools = document.querySelectorAll('#paintTools span');
 const paintColors = document.querySelectorAll('#paintColors span');
+const webcamToggleBtn = document.querySelector('#webcamToggleBtn');
+const paintWebcam = document.querySelector('#paintWebcam');
+let webcamStream = null; // Guarda o fluxo da câmara para o podermos desligar depois
 
 // --- Definição do tamanho fixo estilo MS Paint ---
 const CANVAS_BASE_WIDTH = 1000;
@@ -233,6 +236,10 @@ export function paintInit(startDoodleSuggestions) {
         }
         if (startDoodleSuggestions) startDoodleSuggestions();
     });
+
+    if (webcamToggleBtn) {
+        webcamToggleBtn.addEventListener('click', paintToggleWebcam);
+    }
 }
 
 function paintReSize() {
@@ -532,5 +539,36 @@ async function paintSetJson(json, startingId = 1) {
         paintTabs = getPaintTabs();
         paintSelectedId = paintFindNextId(startingId);
         await paintUpdateTabsContext();
+    }
+}
+
+async function paintToggleWebcam() {
+    // Se a webcam já estiver ligada, vamos desligá-la
+    if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+        webcamStream = null;
+        paintWebcam.srcObject = null;
+        paintWebcam.style.display = 'none';
+        
+        webcamToggleBtn.textContent = 'Turn on Webcam';
+        webcamToggleBtn.style.backgroundColor = '#28a745'; // Verde
+    } 
+    // Se estiver desligada, vamos pedir permissão e ligar
+    else {
+        try {
+            webcamStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: 320, height: 240 }, 
+                audio: false 
+            });
+            
+            paintWebcam.srcObject = webcamStream;
+            paintWebcam.style.display = 'block';
+            
+            webcamToggleBtn.textContent = 'Turn off Webcam';
+            webcamToggleBtn.style.backgroundColor = '#dc3545'; 
+        } catch (err) {
+            console.error("Erro ao aceder à webcam:", err);
+            alert("Não foi possível aceder à webcam. Certifica-te que deste permissão no navegador.");
+        }
     }
 }

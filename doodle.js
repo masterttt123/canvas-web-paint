@@ -3,12 +3,15 @@ import { askAI, normalizeHex, paintSelectSuggestedColor } from './pallete.js';
 
 let classifier = null;
 let doodleTimeout = null; // Substitui o interval por um temporizador dinâmico (Debounce)
-let lastLabel = '';       // Guarda a última categoria para evitar chamadas duplicadas à IA
+let lastLabel = '';  
 const DEBOUNCE_DELAY_MS = 300; // 0.3 segundos de espera após largar o pincel
+let lastWebcamLabel = '';
 
 ml5.imageClassifier('DoodleNet').then(c => {
     classifier = c;
     console.log('DoodleNet ready');
+
+    startWebcamDoodleLoop();
 });
 
 export async function updateDoodleColors() {
@@ -23,19 +26,15 @@ export async function updateDoodleColors() {
         const confidence = Math.floor(results[0].confidence * 100);
         console.log('Doodle classified as:', label, `(${confidence}%)`);
         
-        // Atualiza o texto visual do HTML para o utilizador ver a certeza da IA
         document.querySelector('#doodleLabel').textContent = `${label} (${confidence}%)`;
 
-        // 🛑 CRITÉRIO DE GUARDAR RECURSOS: Se a label for idêntica à anterior, ignora o askAI
         if (label === lastLabel) {
             console.log(`Log: The label "${label}" did not change. askAI call skipped.`);
             return;
         }
 
-        // Se for uma categoria nova, atualiza o histórico
         lastLabel = label;
 
-        // Executa a chamada à tua IA local
         const raw = await askAI(2, label);
         const colors = raw.split(/[\n,]/)
             .map(c => c.trim())
@@ -68,11 +67,80 @@ function renderDoodleColors(colors) {
     document.querySelector('#doodleColorsHex').textContent = colors.join(', ');
 }
 
-// Esta função agora serve como o gatilho inteligente acionado pelo Paint
 export function startDoodleSuggestions() {
-    // Cancela o temporizador anterior se o utilizador voltou a clicar antes dos 0.3s passarem
     clearTimeout(doodleTimeout);
-    
-    // Inicia uma nova contagem decrescente de 300 milissegundos
     doodleTimeout = setTimeout(updateDoodleColors, DEBOUNCE_DELAY_MS);
+}
+
+function startWebcamDoodleLoop() {
+    setInterval(async () => {
+        if (!classifier) return;
+
+        const webcamEl = document.querySelector('#paintWebcam');
+        
+        // Se a webcam não estiver ativa
+        if (!webcamEl || !webcamEl.srcObject || webcamEl.style.display === 'none') {
+            return;
+        }
+
+        try {
+            const results = await classifier.classify(webcamEl);
+            const label = results?.[0]?.label;
+            if (!label) return;
+
+            const confidence = Math.floor(results[0].confidence * 100);
+            
+            const labelEl = document.querySelector('#doodleLabel2');
+            labelEl.textContent = `${label} (${confidence}%)`;
+
+            if (label === lastWebcamLabel) {
+                console.log(`Log: The label webcam "${label}" did not change. askAI call skipped.`);
+                return;
+            }
+
+            lastWebcamLabel = label;
+
+            const raw = await askAI(2, label);
+            const colors = raw.split(/[\n,]/)
+                .map(c => c.trim())
+                .map(normalizeHex)
+                .filter(Boolean)
+                .slice(0, 2);
+
+            if (colors.length === 0) return;
+            renderWebcamColors(colors);
+
+        } catch (err) {
+            console.warn('Falha ao processar frame da webcam:', err);
+        }
+    }, 2000); // 2 sec
+}
+
+function renderWebcamColors(colors) {
+    let container = document.querySelector('#webcamDoodleOutput');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'webcamDoodleOutput';
+        container.style.marginTop = '8px';
+        
+        const labelCon = document.querySelector('#paintWebcamCon');
+        if (labelCon) {
+            labelCon.appendChild(container);
+        }
+    }
+
+    container.innerHTML = '';
+    colors.forEach(color => {
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.value = color;
+        input.dataset.color = color;
+        input.title = color;
+        input.style.margin = '0 4px';
+        input.style.cursor = 'pointer';
+        
+        // Reutiliza a tua função para pintar com a cor sugerida ao clicar!
+        input.addEventListener('pointerdown', paintSelectSuggestedColor);
+        container.appendChild(input);
+    });
 }
