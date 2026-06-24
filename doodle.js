@@ -6,12 +6,13 @@ let doodleTimeout = null; // Substitui o interval por um temporizador dinâmico 
 let lastLabel = '';  
 const DEBOUNCE_DELAY_MS = 300; // 0.3 segundos de espera após largar o pincel
 let lastWebcamLabel = '';
+let p5WebcamInstance = null;
 
 ml5.imageClassifier('DoodleNet').then(c => {
     classifier = c;
     console.log('DoodleNet ready');
 
-    startWebcamDoodleLoop();
+    initP5WebcamLoop();
 });
 
 export async function updateDoodleColors() {
@@ -72,48 +73,107 @@ export function startDoodleSuggestions() {
     doodleTimeout = setTimeout(updateDoodleColors, DEBOUNCE_DELAY_MS);
 }
 
-function startWebcamDoodleLoop() {
-    setInterval(async () => {
-        if (!classifier) return;
 
-        const webcamEl = document.querySelector('#paintWebcam');
-        
-        // Se a webcam não estiver ativa
-        if (!webcamEl || !webcamEl.srcObject || webcamEl.style.display === 'none') {
-            return;
-        }
+function initP5WebcamLoop() {
+    const webcamSketch = (p) => {
+        let p5Canvas;
+        let lastClassifyTime = 0;
 
-        try {
-            const results = await classifier.classify(webcamEl);
-            const label = results?.[0]?.label;
-            if (!label) return;
+        p.setup = () => {
+            p5Canvas = p.createCanvas(500/2, 384/2);
+            p5Canvas.parent('paintWebcamCon'); 
+        };
 
-            const confidence = Math.floor(results[0].confidence * 100);
+        p.draw = () => {
+            const webcamEl = document.querySelector('#paintWebcam');
             
-            const labelEl = document.querySelector('#doodleLabel2');
-            labelEl.textContent = `${label} (${confidence}%)`;
-
-            if (label === lastWebcamLabel) {
-                console.log(`Log: The label webcam "${label}" did not change. askAI call skipped.`);
+            if (!webcamEl || !webcamEl.srcObject || webcamEl.style.display === 'none') {
+                p.clear();
                 return;
             }
 
-            lastWebcamLabel = label;
+            // Remove original webcam 
+            if (webcamEl.style.opacity !== '0') {
+                webcamEl.style.position = 'absolute';
+                webcamEl.style.opacity = '0';
+                webcamEl.style.pointerEvents = 'none';
+            }
 
-            const raw = await askAI(2, label);
-            const colors = raw.split(/[\n,]/)
-                .map(c => c.trim())
-                .map(normalizeHex)
-                .filter(Boolean)
-                .slice(0, 2);
+            p.background(255);
 
-            if (colors.length === 0) return;
-            renderWebcamColors(colors);
+            const videoW = webcamEl.videoWidth;
+            const videoH = webcamEl.videoHeight;
 
-        } catch (err) {
-            console.warn('Falha ao processar frame da webcam:', err);
+            // 2. Algoritmo manual de "Object-Fit: Cover" para manter o rácio 1000x768 perfeito sem achatar
+            const videoRatio = videoW / videoH;
+            const targetRatio = p.width / p.height;
+            
+            let sx = 0, sy = 0, sw = videoW, sh = videoH;
+
+            if (videoRatio > targetRatio) {
+                sw = videoH * targetRatio;
+                sx = (videoW - sw) / 2;
+            } else {
+                sh = videoW / targetRatio;
+                sy = (videoH - sh) / 2;
+            }
+
+            // 3. Desenha o frame da câmara invertido (efeito espelho igual ao MS Paint)
+            p.push();
+            p.translate(p.width, 0);
+            p.scale(-1, 1);
+            p.drawingContext.drawImage(webcamEl, sx, sy, sw, sh, 0, 0, p.width, p.height);
+            p.pop();
+
+            // 4. 🔥 Filtro Threshold nativo do p5.js aplicado em tempo real no ecrã e nos dados
+            p.filter(p.THRESHOLD, 0.65);
+
+            // 2 sec
+            let currentTime = p.millis();
+            if (currentTime - lastClassifyTime > 2000) {
+                lastClassifyTime = currentTime;
+                executarClassificacaoWebcam(p5Canvas.elt);
+            }
+        };
+
+        // Função interna para rodar a IA do ml5 usando o canvas gerado pelo p5
+        async function executarClassificacaoWebcam(canvasElement) {
+            if (!classifier) return;
+
+            try {
+                const results = await classifier.classify(canvasElement);
+                const label = results?.[0]?.label;
+                if (!label) return;
+
+                const confidence = Math.floor(results[0].confidence * 100);
+                
+                const labelEl = document.querySelector('#doodleLabel2');
+                labelEl.textContent = `${label} (${confidence}%)`;
+
+                if (label === lastWebcamLabel) {
+                    console.log(`Log: The label webcam "${label}" did not change. askAI call skipped.`);
+                    return;
+                }
+
+                lastWebcamLabel = label;
+
+                const raw = await askAI(2, label);
+                const colors = raw.split(/[\n,]/)
+                    .map(c => c.trim())
+                    .map(normalizeHex)
+                    .filter(Boolean)
+                    .slice(0, 2);
+
+                if (colors.length === 0) return;
+                renderWebcamColors(colors);
+
+            } catch (err) {
+                console.warn('Falha ao processar frame da webcam no loop do p5:', err);
+            }
         }
-    }, 2000); // 2 sec
+    };
+
+    p5WebcamInstance = new p5(webcamSketch);
 }
 
 function renderWebcamColors(colors) {
@@ -139,7 +199,6 @@ function renderWebcamColors(colors) {
         input.style.margin = '0 4px';
         input.style.cursor = 'pointer';
         
-        // Reutiliza a tua função para pintar com a cor sugerida ao clicar!
         input.addEventListener('pointerdown', paintSelectSuggestedColor);
         container.appendChild(input);
     });
