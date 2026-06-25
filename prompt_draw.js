@@ -218,8 +218,8 @@ Examples:
 Return JSON only.
 `.trim();
 
-const AUTO_SKETCH_STROKE_MIN = 85;
-const AUTO_SKETCH_STROKE_MAX = 85;
+const AUTO_SKETCH_STROKE_MIN = 72;
+const AUTO_SKETCH_STROKE_MAX = 72;
 const AUTO_SKETCH_STROKE_SCALE = 6;
 
 function clamp(value, min, max) {

@@ -73,8 +73,8 @@ const paintWebcam = document.querySelector('#paintWebcam');
 let webcamStream = null; // Guarda o fluxo da câmara para o podermos desligar depois
 
 // --- Definição do tamanho fixo estilo MS Paint ---
-const CANVAS_BASE_WIDTH = 1000;
-const CANVAS_BASE_HEIGHT = 768;
+const CANVAS_BASE_WIDTH = 800;
+const CANVAS_BASE_HEIGHT = 450;
 
 
 const paintQuality = 2;
@@ -95,9 +95,9 @@ const paintEditChangeEvent = paintEditChangeEventMaster.subscription;
 
 let paintData = {};
 let paintBrushSize = {
-    pencil: 85,
+    pencil: 72,
     eraser: 100,
-    brush: 85,
+    brush: 72,
 };
 let paintCurrentLineCap = 'round';
 let paintDrawing = false;

@@ -54,16 +54,16 @@ function renderDoodleColors(colors) {
     const container = document.querySelector('#doodleOutput');
     if (!container) return;
 
-    container.innerHTML = '';
-    colors.forEach(color => {
-        const input = document.createElement('input');
-        input.type = 'color';
-        input.value = color;
-        input.dataset.color = color;
-        input.title = color;
-        input.addEventListener('pointerdown', paintSelectSuggestedColor);
-        container.appendChild(input);
-    });
+    // container.innerHTML = '';
+    // colors.forEach(color => {
+    //     const input = document.createElement('input');
+    //     input.type = 'color';
+    //     input.value = color;
+    //     input.dataset.color = color;
+    //     input.title = color;
+    //     input.addEventListener('pointerdown', paintSelectSuggestedColor);
+    //     container.appendChild(input);
+    // });
 
     document.querySelector('#doodleColorsHex').textContent = colors.join(', ');
 }
