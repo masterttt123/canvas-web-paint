@@ -218,8 +218,8 @@ Examples:
 Return JSON only.
 `.trim();
 
-const AUTO_SKETCH_STROKE_MIN = 72;
-const AUTO_SKETCH_STROKE_MAX = 72;
+const AUTO_SKETCH_STROKE_MIN = 85;
+const AUTO_SKETCH_STROKE_MAX = 85;
 const AUTO_SKETCH_STROKE_SCALE = 6;
 
 function clamp(value, min, max) {
@@ -1572,11 +1572,11 @@ export function drawPlanOnCanvas(plan) {
   if (!ctx || !canvas) {
     throw new Error('Canvas not Available.');
   }
-
+  /*
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+  */
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
 
@@ -1621,10 +1621,11 @@ function clearPromptSketch() {
   const canvas = getPaintCanvas();
 
   if (!ctx || !canvas) return;
-
+  
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#FFFFFF';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
 }
 
 export function initPromptDraw() {

@@ -92,9 +92,9 @@ const paintEditChangeEvent = paintEditChangeEventMaster.subscription;
 
 let paintData = {};
 let paintBrushSize = {
-    pencil: 72,
+    pencil: 85,
     eraser: 100,
-    brush: 72,
+    brush: 85,
 };
 let paintCurrentLineCap = 'round';
 let paintDrawing = false;
