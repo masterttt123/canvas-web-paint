@@ -1,4 +1,5 @@
 import { getPaintCtx, getPaintCanvas } from './paint.js';
+import { updateDoodleColors } from './doodle.js';
 
 const INTENT_SCHEMA = {
   type: 'object',
@@ -27,6 +28,10 @@ const INTENT_SCHEMA = {
         'container',
         'landscape',
         'symbol',
+        'weather',
+        'food',
+        'sea_animal',
+        'flying_animal',
         'object'
       ]
     },
@@ -81,6 +86,10 @@ Allowed category:
 - container
 - landscape
 - symbol
+- weather
+- food
+- sea_animal
+- flying_animal
 - object
 
 Allowed feature ideas:
@@ -108,6 +117,14 @@ Allowed feature ideas:
 - floating
 - face_like
 - symmetrical
+- rainbow
+- fruit
+- cone
+- fins
+- beak
+- feathers
+- sun_cloud
+- waves
 
 Examples:
 "sun" ->
@@ -154,8 +171,56 @@ Examples:
   "features": ["roof", "window", "door", "trunk", "crown"]
 }
 
+"rainbow" ->
+{
+  "subject": "rainbow",
+  "secondarySubject": null,
+  "sceneType": "single_object",
+  "composition": "centered",
+  "category": "weather",
+  "parts": ["rainbow arcs"],
+  "features": ["rainbow", "symmetrical"]
+}
+
+"apple" ->
+{
+  "subject": "apple",
+  "secondarySubject": null,
+  "sceneType": "single_object",
+  "composition": "centered",
+  "category": "food",
+  "parts": ["body", "stem", "leaf"],
+  "features": ["fruit", "round"]
+}
+
+"fish" ->
+{
+  "subject": "fish",
+  "secondarySubject": null,
+  "sceneType": "single_object",
+  "composition": "centered",
+  "category": "sea_animal",
+  "parts": ["body", "tail", "eye", "fins"],
+  "features": ["tail", "fins", "symmetrical"]
+}
+
+"bird" ->
+{
+  "subject": "bird",
+  "secondarySubject": null,
+  "sceneType": "single_object",
+  "composition": "centered",
+  "category": "flying_animal",
+  "parts": ["body", "wing", "beak", "eye"],
+  "features": ["wings", "beak", "feathers"]
+}
+
 Return JSON only.
 `.trim();
+
+const AUTO_SKETCH_STROKE_MIN = 72;
+const AUTO_SKETCH_STROKE_MAX = 72;
+const AUTO_SKETCH_STROKE_SCALE = 6;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -171,6 +236,26 @@ function normWidth(value) {
   const num = Number(value);
   if (!Number.isFinite(num)) return 4;
   return clamp(Math.round(num), 1, 40);
+}
+
+function boostElementStroke(el) {
+  if (!el || typeof el !== 'object') return el;
+  return {
+    ...el,
+    strokeWidth: clamp(
+      Math.round((Number(el.strokeWidth) || 4) * AUTO_SKETCH_STROKE_SCALE),
+      AUTO_SKETCH_STROKE_MIN,
+      AUTO_SKETCH_STROKE_MAX
+    )
+  };
+}
+
+function boostPlanStroke(plan) {
+  if (!plan || !Array.isArray(plan.elements)) return plan;
+  return {
+    ...plan,
+    elements: plan.elements.map(boostElementStroke)
+  };
 }
 
 function toCanvasX(x, canvas) {
@@ -261,14 +346,14 @@ function normalizeElement(element) {
     safe.y2 = normCoord(element?.y2);
   }
 
-    if (safe.type === 'polyline' || safe.type === 'polygon') {
+  if (safe.type === 'polyline' || safe.type === 'polygon') {
     const pts = Array.isArray(element?.points)
-        ? element.points.slice(0, 20).map(normalizePoint).filter(Boolean)
-        : [];
+      ? element.points.slice(0, 20).map(normalizePoint).filter(Boolean)
+      : [];
     if (pts.length < 2) return null;
     if (safe.type === 'polygon' && pts.length < 3) return null;
     safe.points = pts;
-    }
+  }
 
   if (safe.type === 'circle') {
     safe.cx = normCoord(element?.cx);
@@ -447,10 +532,21 @@ function shiftElement(el, dx, dy) {
   return out;
 }
 
+function getVisualBounds(el) {
+  const b = getElementBounds(el);
+  const pad = Math.max(4, Number(el?.strokeWidth) || 4);
+  return {
+    minX: b.minX - pad,
+    minY: b.minY - pad,
+    maxX: b.maxX + pad,
+    maxY: b.maxY + pad
+  };
+}
+
 function fitAndCenterPlanElements(elements) {
   if (!Array.isArray(elements) || !elements.length) return elements || [];
 
-  const bounds = elements.map(getElementBounds);
+  const bounds = elements.map(getVisualBounds);
   const minX = Math.min(...bounds.map((b) => b.minX));
   const minY = Math.min(...bounds.map((b) => b.minY));
   const maxX = Math.max(...bounds.map((b) => b.maxX));
@@ -460,23 +556,23 @@ function fitAndCenterPlanElements(elements) {
   const height = Math.max(1, maxY - minY);
 
   const targetBox = {
-    minX: 180,
-    minY: 120,
-    maxX: 820,
-    maxY: 820
+    minX: 220,
+    minY: 180,
+    maxX: 780,
+    maxY: 760
   };
 
   const targetWidth = targetBox.maxX - targetBox.minX;
   const targetHeight = targetBox.maxY - targetBox.minY;
 
-  const scale = Math.min(targetWidth / width, targetHeight / height, 1.8);
+  const scale = Math.min(targetWidth / width, targetHeight / height, 1.35);
 
-  const centerX = minX + width / 2;
-  const centerY = minY + height / 2;
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
 
   const scaled = elements.map((el) => scaleElement(el, scale, scale, centerX, centerY));
 
-  const scaledBounds = scaled.map(getElementBounds);
+  const scaledBounds = scaled.map(getVisualBounds);
   const sMinX = Math.min(...scaledBounds.map((b) => b.minX));
   const sMinY = Math.min(...scaledBounds.map((b) => b.minY));
   const sMaxX = Math.max(...scaledBounds.map((b) => b.maxX));
@@ -559,6 +655,10 @@ function normalizeIntent(intent) {
     'container',
     'landscape',
     'symbol',
+    'weather',
+    'food',
+    'sea_animal',
+    'flying_animal',
     'object'
   ]);
 
@@ -843,6 +943,78 @@ function inferIntentFromPrompt(prompt) {
     };
   }
 
+  if (text.includes('rainbow')) {
+    return {
+      subject: 'rainbow',
+      secondarySubject: null,
+      sceneType: 'single_object',
+      composition: 'centered',
+      category: 'weather',
+      parts: ['rainbow arcs'],
+      features: ['rainbow', 'symmetrical']
+    };
+  }
+
+  if (text.includes('apple')) {
+    return {
+      subject: 'apple',
+      secondarySubject: null,
+      sceneType: 'single_object',
+      composition: 'centered',
+      category: 'food',
+      parts: ['body', 'stem', 'leaf'],
+      features: ['fruit', 'round']
+    };
+  }
+
+  if (text.includes('ice cream') || text.includes('icecream')) {
+    return {
+      subject: 'ice cream',
+      secondarySubject: null,
+      sceneType: 'single_object',
+      composition: 'top_bottom',
+      category: 'food',
+      parts: ['scoop', 'cone'],
+      features: ['round', 'cone']
+    };
+  }
+
+  if (text.includes('fish')) {
+    return {
+      subject: 'fish',
+      secondarySubject: null,
+      sceneType: 'single_object',
+      composition: 'centered',
+      category: 'sea_animal',
+      parts: ['body', 'tail', 'eye', 'fins'],
+      features: ['tail', 'fins', 'symmetrical']
+    };
+  }
+
+  if (text.includes('bird')) {
+    return {
+      subject: 'bird',
+      secondarySubject: null,
+      sceneType: 'single_object',
+      composition: 'centered',
+      category: 'flying_animal',
+      parts: ['body', 'wing', 'beak', 'eye'],
+      features: ['wings', 'beak', 'feathers']
+    };
+  }
+
+  if (text.includes('butterfly')) {
+    return {
+      subject: 'butterfly',
+      secondarySubject: null,
+      sceneType: 'single_object',
+      composition: 'centered',
+      category: 'flying_animal',
+      parts: ['body', 'wings'],
+      features: ['wings', 'symmetrical']
+    };
+  }
+
   return {
     subject: 'object',
     secondarySubject: null,
@@ -924,7 +1096,9 @@ function renderPlant(intent) {
   }
 
   if (hasVase) {
-    elements.push(polygon([[430, 540], [570, 540], [540, 680], [460, 680]], 4));
+    elements.push(
+      polygon([[430, 540], [570, 540], [540, 680], [460, 680]], 4)
+    );
   }
 
   return {
@@ -945,6 +1119,7 @@ function renderCelestial(intent) {
     elements.push(...makeCrescent(500, 360, 110, 90, 42));
   } else {
     elements.push(circle(500, 360, 90, 4));
+
     if (intent.features.includes('radial') || intent.subject === 'sun') {
       elements.push(
         line(500, 220, 500, 150, 4),
@@ -1138,6 +1313,127 @@ function renderSymbol(intent) {
   };
 }
 
+function renderWeather(intent) {
+  if (intent.subject === 'rainbow' || intent.features.includes('rainbow')) {
+    return {
+      background: '#FFFFFF',
+      sceneType: intent.sceneType,
+      primarySubject: intent.subject,
+      secondarySubject: intent.secondarySubject,
+      composition: intent.composition,
+      mainParts: intent.parts,
+      elements: fitAndCenterPlanElements(dedupeElements([
+        arc(500, 620, 240, Math.PI, Math.PI * 2, 4),
+        arc(500, 620, 190, Math.PI, Math.PI * 2, 4),
+        arc(500, 620, 140, Math.PI, Math.PI * 2, 4)
+      ].filter(Boolean)))
+    };
+  }
+
+  return {
+    background: '#FFFFFF',
+    sceneType: intent.sceneType,
+    primarySubject: intent.subject,
+    secondarySubject: intent.secondarySubject,
+    composition: intent.composition,
+    mainParts: intent.parts,
+    elements: fitAndCenterPlanElements(dedupeElements([
+      circle(420, 390, 55, 4),
+      circle(500, 350, 75, 4),
+      circle(585, 390, 55, 4),
+      line(365, 435, 640, 435, 4),
+      circle(650, 260, 45, 4),
+      line(650, 195, 650, 155, 4),
+      line(650, 325, 650, 365, 4)
+    ].filter(Boolean)))
+  };
+}
+
+function renderFood(intent) {
+  if (intent.subject === 'ice cream') {
+    return {
+      background: '#FFFFFF',
+      sceneType: intent.sceneType,
+      primarySubject: intent.subject,
+      secondarySubject: intent.secondarySubject,
+      composition: intent.composition,
+      mainParts: intent.parts,
+      elements: fitAndCenterPlanElements(dedupeElements([
+        circle(500, 300, 90, 4),
+        polygon([[440, 390], [560, 390], [500, 620]], 4)
+      ].filter(Boolean)))
+    };
+  }
+
+  return {
+    background: '#FFFFFF',
+    sceneType: intent.sceneType,
+    primarySubject: intent.subject,
+    secondarySubject: intent.secondarySubject,
+    composition: intent.composition,
+    mainParts: intent.parts,
+    elements: fitAndCenterPlanElements(dedupeElements([
+      circle(500, 390, 110, 4),
+      line(500, 280, 500, 225, 4),
+      line(500, 250, 545, 220, 4)
+    ].filter(Boolean)))
+  };
+}
+
+function renderSeaAnimal(intent) {
+  return {
+    background: '#FFFFFF',
+    sceneType: intent.sceneType,
+    primarySubject: intent.subject,
+    secondarySubject: intent.secondarySubject,
+    composition: intent.composition,
+    mainParts: intent.parts,
+    elements: fitAndCenterPlanElements(dedupeElements([
+      ellipse(500, 390, 150, 90, 4),
+      polygon([[650, 390], [760, 320], [760, 460]], 4),
+      circle(430, 375, 10, 4),
+      polyline([[520, 350], [580, 320], [620, 350]], 4),
+      polyline([[520, 430], [580, 460], [620, 430]], 4)
+    ].filter(Boolean)))
+  };
+}
+
+function renderFlyingAnimal(intent) {
+  if (intent.subject === 'butterfly') {
+    return {
+      background: '#FFFFFF',
+      sceneType: intent.sceneType,
+      primarySubject: intent.subject,
+      secondarySubject: intent.secondarySubject,
+      composition: intent.composition,
+      mainParts: intent.parts,
+      elements: fitAndCenterPlanElements(dedupeElements([
+        line(500, 280, 500, 560, 4),
+        ellipse(435, 370, 80, 110, 4),
+        ellipse(565, 370, 80, 110, 4),
+        ellipse(445, 490, 65, 90, 4),
+        ellipse(555, 490, 65, 90, 4)
+      ].filter(Boolean)))
+    };
+  }
+
+  return {
+    background: '#FFFFFF',
+    sceneType: intent.sceneType,
+    primarySubject: intent.subject,
+    secondarySubject: intent.secondarySubject,
+    composition: intent.composition,
+    mainParts: intent.parts,
+    elements: fitAndCenterPlanElements(dedupeElements([
+      ellipse(500, 420, 110, 75, 4),
+      polyline([[430, 420], [350, 350], [390, 450]], 4),
+      polyline([[570, 420], [650, 350], [610, 450]], 4),
+      polygon([[610, 410], [660, 430], [610, 455]], 4),
+      circle(450, 405, 8, 4)
+    ].filter(Boolean)))
+  };
+}
+
 function renderGenericObject(intent) {
   if (intent.subject === 'balloon' || intent.features.includes('floating')) {
     return {
@@ -1180,6 +1476,10 @@ function buildSketchFromIntent(intent, prompt) {
   if (safeIntent.category === 'container') return renderContainer(safeIntent);
   if (safeIntent.category === 'landscape') return renderLandscape(safeIntent);
   if (safeIntent.category === 'symbol') return renderSymbol(safeIntent);
+  if (safeIntent.category === 'weather') return renderWeather(safeIntent);
+  if (safeIntent.category === 'food') return renderFood(safeIntent);
+  if (safeIntent.category === 'sea_animal') return renderSeaAnimal(safeIntent);
+  if (safeIntent.category === 'flying_animal') return renderFlyingAnimal(safeIntent);
 
   return renderGenericObject(safeIntent);
 }
@@ -1196,22 +1496,22 @@ function drawElement(ctx, canvas, el) {
   }
 
   if (
-  el.type === 'polyline' &&
-  Array.isArray(el.points) &&
-  el.points.length >= 2 &&
-  el.points.every((p) => Array.isArray(p) && p.length >= 2)
+    el.type === 'polyline' &&
+    Array.isArray(el.points) &&
+    el.points.length >= 2 &&
+    el.points.every((p) => Array.isArray(p) && p.length >= 2)
   ) {
-    ctx.moveTo(toCanvasX(el.points[0][0], canvas), toCanvasY(el.points[0][1], canvas));
+    ctx.moveTo(toCanvasX(el.points, canvas), toCanvasY(el.points, canvas));
     for (let i = 1; i < el.points.length; i++) {
-      ctx.lineTo(toCanvasX(el.points[i][0], canvas), toCanvasY(el.points[i][1], canvas));
+      ctx.lineTo(toCanvasX(el.points[i], canvas), toCanvasY(el.points[i], canvas));
     }
   }
 
   if (
-  el.type === 'polygon' &&
-  Array.isArray(el.points) &&
-  el.points.length >= 3 &&
-  el.points.every((p) => Array.isArray(p) && p.length >= 2)
+    el.type === 'polygon' &&
+    Array.isArray(el.points) &&
+    el.points.length >= 3 &&
+    el.points.every((p) => Array.isArray(p) && p.length >= 2)
   ) {
     ctx.moveTo(toCanvasX(el.points[0][0], canvas), toCanvasY(el.points[0][1], canvas));
     for (let i = 1; i < el.points.length; i++) {
@@ -1300,12 +1600,19 @@ export async function generateDrawingFromPrompt(prompt) {
     intent = inferIntentFromPrompt(trimmed);
   }
 
-  const plan = validatePlan(buildSketchFromIntent(intent, trimmed));
+  const rawPlan = validatePlan(buildSketchFromIntent(intent, trimmed));
+  const boostedPlan = boostPlanStroke(rawPlan);
+  const plan = {
+    ...boostedPlan,
+    elements: fitAndCenterPlanElements(boostedPlan.elements)
+  };
 
   console.log('Generated intent:', intent);
   console.log('Generated heuristic drawing plan:', plan);
 
   drawPlanOnCanvas(plan);
+  updateDoodleColors();
+
   return plan;
 }
 
