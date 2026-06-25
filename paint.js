@@ -68,18 +68,21 @@ const paintTabsCon = document.querySelector('#paintTabsCon');
 const paintColorCon = document.querySelector('#paintColorCon');
 const paintTools = document.querySelectorAll('#paintTools span');
 const paintColors = document.querySelectorAll('#paintColors span');
+const webcamToggleBtn = document.querySelector('#webcamToggleBtn');
+const paintWebcam = document.querySelector('#paintWebcam');
+let webcamStream = null; // Guarda o fluxo da câmara para o podermos desligar depois
 
 // --- Definição do tamanho fixo estilo MS Paint ---
-const CANVAS_BASE_WIDTH = 800;
-const CANVAS_BASE_HEIGHT = 600;
+const CANVAS_BASE_WIDTH = 1000;
+const CANVAS_BASE_HEIGHT = 768;
+
 
 const paintQuality = 2;
 const paintFrequency = 1;
 const paintMinMovement = 5;
-// const paintCtx = paintCanvas.getContext('2d');
 const paintCtx = paintCanvas.getContext('2d', { willReadFrequently: true });
 // Multiplica pelo multiplicador de qualidade interna do teu app
-const paintCalcQuality = (val) => val * paintQuality; 
+const paintCalcQuality = (val) => val * paintQuality;
 const paintNotMove = (x, y) => {
     const x2 = Math.abs(paintLastX - x);
     const y2 = Math.abs(paintLastY - y);
@@ -106,6 +109,17 @@ let paintSelectedId = 1;
 let paintCycles = paintFrequency;
 let paintTabs = getPaintTabs();
 let paintTabsCreated = 1;
+
+// Adiciona junto às outras variáveis no topo do ficheiro
+let currentDrawingPoints = []; // guarda {x, y} absolutos do desenho atual
+
+export function getCurrentDrawingPoints() {
+    return currentDrawingPoints;
+}
+
+export function clearCurrentDrawingPoints() {
+    currentDrawingPoints = [];
+}
 
 export function getPaintCanvas() {
     return paintCanvas;
@@ -143,6 +157,18 @@ export function getPaintColors() {
     return paintColors;
 }
 
+// no paint.js, junto às outras funções exportadas
+export async function setPaintImageFromDataUrl(dataUrl) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            paintCtx.drawImage(img, 0, 0, paintCanvas.width, paintCanvas.height);
+            resolve();
+        };
+        img.src = dataUrl;
+    });
+}
+
 export function paintInit(startDoodleSuggestions) {
     // 1. Define a resolução interna de alta qualidade fixa
     paintCanvas.width = paintCalcQuality(CANVAS_BASE_WIDTH);
@@ -153,7 +179,7 @@ export function paintInit(startDoodleSuggestions) {
     paintCanvas.style.height = `${CANVAS_BASE_HEIGHT}px`;
     paintCanvas.style.display = 'block';
     paintCanvas.style.margin = '20px auto'; // Centra a "folha" no ecrã
-    paintCanvas.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)'; // Sombra estilo folha
+    paintCanvas.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
     paintCanvas.style.border = '1px solid #ccc';
 
     paintClearTab();
@@ -171,7 +197,7 @@ export function paintInit(startDoodleSuggestions) {
         paintSizeVal.innerHTML = val;
         paintCtx.lineWidth = val;
     });
-    
+
     paintColorInput.addEventListener('change', paintPickColor);
     paintColorInput.addEventListener('input', paintPickColor);
     paintSaveBtn.addEventListener('click', paintSaveImg);
@@ -185,13 +211,35 @@ export function paintInit(startDoodleSuggestions) {
 
     paintCanvas.addEventListener('mousedown', paintStartDraw);
     paintCanvas.addEventListener('mousemove', paintContinueDraw);
-    paintCanvas.addEventListener('mouseup', () => (paintDrawing = false));
+
+    // --- CÓDIGO ATUALIZADO E CORRETO ---
+    paintCanvas.addEventListener('mousedown', paintStartDraw);
+    paintCanvas.addEventListener('mousemove', paintContinueDraw);
+
+    // Quando o utilizador larga o rato, para de desenhar E inicia a contagem de 0.3s da IA
+    paintCanvas.addEventListener('mouseup', () => {
+    paintDrawing = false;
+        if (currentDrawingPoints.length > 0) {
+            currentDrawingPoints[currentDrawingPoints.length - 1].penUp = true;
+        }
+        if (startDoodleSuggestions) startDoodleSuggestions();
+    });
+
     paintCanvas.addEventListener('touchstart', paintStartDraw);
     paintCanvas.addEventListener('touchmove', paintContinueDraw);
-    paintCanvas.addEventListener('touchend', () => (paintDrawing = false));
 
-    paintCanvas.addEventListener('mousedown', startDoodleSuggestions);
-    paintCanvas.addEventListener('touchstart', startDoodleSuggestions);
+    // O mesmo comportamento inteligente para ecrãs táteis
+    paintCanvas.addEventListener('touchend', () => {
+        paintDrawing = false;
+        if (currentDrawingPoints.length > 0) {
+            currentDrawingPoints[currentDrawingPoints.length - 1].penUp = true;
+        }
+        if (startDoodleSuggestions) startDoodleSuggestions();
+    });
+
+    if (webcamToggleBtn) {
+        webcamToggleBtn.addEventListener('click', paintToggleWebcam);
+    }
 }
 
 function paintReSize() {
@@ -223,6 +271,8 @@ function paintContinueDraw(e) {
         return
     }
 
+    currentDrawingPoints.push({ x, y, penUp: false });
+
     paintCtx.beginPath();
     paintCtx.moveTo(paintLastX, paintLastY);
     paintCtx.lineTo(x, y);
@@ -242,6 +292,9 @@ function paintStartDraw(e) {
     paintDrawing = true;
     paintLastX = paintCalcQuality(e.touches ? e.touches[0].pageX - paintRect.left : e.offsetX);
     paintLastY = paintCalcQuality(e.touches ? e.touches[0].pageY - paintRect.top : e.offsetY);
+
+    currentDrawingPoints.push({ x: paintLastX, y: paintLastY, penUp: false });
+
     paintCtx.beginPath();
     paintCtx.moveTo(paintLastX, paintLastY);
     paintCtx.lineTo(paintLastX, paintLastY);
@@ -423,6 +476,7 @@ function paintClearTab(e) {
         if (!confirm('Are you sure you want to clear the page?')) return;
         paintCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
     }
+    clearCurrentDrawingPoints(); //  Limpa os pontos armazenados
 
     paintCtx.fillStyle = paintBackground;
     paintCtx.lineCap = paintCurrentLineCap;
@@ -485,5 +539,36 @@ async function paintSetJson(json, startingId = 1) {
         paintTabs = getPaintTabs();
         paintSelectedId = paintFindNextId(startingId);
         await paintUpdateTabsContext();
+    }
+}
+
+async function paintToggleWebcam() {
+    // Se a webcam já estiver ligada, vamos desligá-la
+    if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+        webcamStream = null;
+        paintWebcam.srcObject = null;
+        paintWebcam.style.display = 'none';
+        
+        webcamToggleBtn.textContent = 'Turn on Webcam';
+        webcamToggleBtn.style.backgroundColor = '#28a745'; // Verde
+    } 
+    // Se estiver desligada, vamos pedir permissão e ligar
+    else {
+        try {
+            webcamStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: 320, height: 240 }, 
+                audio: false 
+            });
+            
+            paintWebcam.srcObject = webcamStream;
+            paintWebcam.style.display = 'block';
+            
+            webcamToggleBtn.textContent = 'Turn off Webcam';
+            webcamToggleBtn.style.backgroundColor = '#dc3545'; 
+        } catch (err) {
+            console.error("Erro ao aceder à webcam:", err);
+            alert("Não foi possível aceder à webcam. Certifica-te que deste permissão no navegador.");
+        }
     }
 }

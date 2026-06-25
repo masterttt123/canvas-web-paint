@@ -1611,7 +1611,8 @@ export async function generateDrawingFromPrompt(prompt) {
   console.log('Generated heuristic drawing plan:', plan);
 
   drawPlanOnCanvas(plan);
-  updateDoodleColors();
+
+  updateDoodleColors()
 
   return plan;
 }

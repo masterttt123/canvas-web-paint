@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>AI Completing Drawing</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        #status {
+            margin: 12px 0;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        canvas {
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        }
+        button {
+            margin-top: 16px;
+            padding: 10px 20px;
+            background: #ff0077;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        button.secondary {
+            background: #444;
+        }
+        .row {
+            display: flex;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h2>The AI is completing your drawing</h2>
+    <p id="status">Loading...</p>
+    <canvas id="magentaCanvas" width="600" height="600"></canvas>
+    <div class="row">
+        <button id="regenerateBtn" disabled>Generate again</button>
+        <button id="applyBtn" disabled class="secondary">Accept changes</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@magenta/sketch"></script>
+    <script>
+        const statusEl = document.querySelector('#status');
+        const canvas = document.querySelector('#magentaCanvas');
+        const ctx = canvas.getContext('2d');
+        const regenerateBtn = document.querySelector('#regenerateBtn');
+        const applyBtn = document.querySelector('#applyBtn');
+
+        // Tamanho real do canvas principal do Paint (paint.js: CANVAS_BASE_WIDTH/HEIGHT * paintQuality)
+        const SOURCE_CANVAS_WIDTH = 1000 * 2;  // CANVAS_BASE_WIDTH * paintQuality
+        const SOURCE_CANVAS_HEIGHT = 768 * 2;  // CANVAS_BASE_HEIGHT * paintQuality
+
+        let model = null;
+        let inputLabel = null;
+        let inputCanvasDataUrl = null;
+        let inputPoints = [];
+
+        function normalizeCategoryName(label) {
+            return label.toLowerCase().trim().replace(/\s+/g, '_');
+        }
+
+        function setStatus(msg) {
+            statusEl.textContent = msg;
+            console.log(msg);
+        }
+
+        // Algoritmo RDP simples para simplificar a polilinha antes de enviar ao modelo
+        function rdpSimplify(points, epsilon) {
+            if (points.length < 3) return points;
+
+            function perpendicularDistance(point, lineStart, lineEnd) {
+                const dx = lineEnd.x - lineStart.x;
+                const dy = lineEnd.y - lineStart.y;
+                const mag = Math.sqrt(dx * dx + dy * dy);
+                if (mag === 0) {
+                    const ddx = point.x - lineStart.x;
+                    const ddy = point.y - lineStart.y;
+                    return Math.sqrt(ddx * ddx + ddy * ddy);
+                }
+                const u = ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / (mag * mag);
+                const closestX = lineStart.x + u * dx;
+                const closestY = lineStart.y + u * dy;
+                const ddx = point.x - closestX;
+                const ddy = point.y - closestY;
+                return Math.sqrt(ddx * ddx + ddy * ddy);
+            }
+
+            function rdpRecursive(pts, eps) {
+                if (pts.length < 3) return pts;
+
+                let maxDist = 0;
+                let index = 0;
+                const start = pts[0];
+                const end = pts[pts.length - 1];
+
+                for (let i = 1; i < pts.length - 1; i++) {
+                    const dist = perpendicularDistance(pts[i], start, end);
+                    if (dist > maxDist) {
+                        maxDist = dist;
+                        index = i;
+                    }
+                }
+
+                if (maxDist > eps) {
+                    const left = rdpRecursive(pts.slice(0, index + 1), eps);
+                    const right = rdpRecursive(pts.slice(index), eps);
+                    return left.slice(0, -1).concat(right);
+                }
+                return [start, end];
+            }
+
+            // Simplifica cada traço (separado por penUp) individualmente, não a sequência toda como uma linha só
+            const segments = [];
+            let current = [];
+            for (const p of points) {
+                current.push(p);
+                if (p.penUp) {
+                    segments.push(current);
+                    current = [];
+                }
+            }
+            if (current.length > 0) segments.push(current);
+
+            let result = [];
+            for (const seg of segments) {
+                const simplified = rdpRecursive(seg, epsilon);
+                result = result.concat(simplified);
+            }
+            return result;
+        }
+
+        async function loadInputDrawing() {
+            inputLabel = localStorage.getItem('magenta_input_label');
+            inputCanvasDataUrl = localStorage.getItem('magenta_input_canvas');
+            inputPoints = JSON.parse(localStorage.getItem('magenta_input_points') || '[]');
+
+            console.log(`Points received from drawing: ${inputPoints.length}`);
+
+            if (!inputLabel) {
+                setStatus('No drawing received. Go back to Paint and click "AI Complete Drawing" again.');
+                return false;
+            }
+
+            // Draw the user's input in the background, in light gray, as a reference
+            if (inputCanvasDataUrl) {
+                await new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        ctx.globalAlpha = 0.15;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        ctx.globalAlpha = 1.0;
+                        resolve();
+                    };
+                    img.src = inputCanvasDataUrl;
+                });
+            }
+
+            return true;
+        }
+
+        async function loadModel(name) {
+            setStatus(`Downloading the AI's brain for "${name}"...`);
+            model = new ms.SketchRNN(
+                `https://storage.googleapis.com/quickdraw-models/sketchRNN/models/${name}.gen.json`
+            );
+            await model.initialize();
+            setStatus(`Model sketchRNN for "${name}" ready!`);
+        }
+
+        // Converte os pontos absolutos {x, y, penUp} (no espaço do canvas principal)
+        // em strokes relativos [dx, dy, pen_down, pen_up, pen_end], já escalados
+        // para o espaço deste canvas pequeno.
+        function pointsToStrokes(rawPoints) {
+            if (!rawPoints || rawPoints.length < 2) return [];
+
+            // Epsilon proporcional ao tamanho do teu canvas — ajusta se necessário.
+            // O paper usa epsilon=2.0 num espaço de ~255px; o teu canvas é maior, escala-se proporcionalmente.
+            const epsilon = 3.5; // valor inicial razoável para um canvas de ~2000px de largura
+
+            const simplified = rdpSimplify(rawPoints, epsilon);
+            console.log(`📐 Points: ${rawPoints.length} → ${simplified.length} after RDP simplification`);
+
+            const strokes = [];
+            for (let i = 1; i < simplified.length; i++) {
+                const dx = simplified[i].x - simplified[i - 1].x;
+                const dy = simplified[i].y - simplified[i - 1].y;
+                const isPenUp = simplified[i - 1].penUp;
+                strokes.push([dx, dy, isPenUp ? 0 : 1, isPenUp ? 1 : 0, 0]);
+            }
+            return strokes;
+        }
+
+        function getStartingPosition(rawPoints) {
+            if (rawPoints.length === 0) {
+                return { x: canvas.width / 2, y: canvas.height / 2 };
+            }
+            // Posição inicial ainda precisa de escala simples canvas-grande → canvas-pequeno
+            // (isto é só para POSICIONAR onde a IA começa a desenhar no ecrã, não afeta o modelo)
+            const scaleX = canvas.width / SOURCE_CANVAS_WIDTH;
+            const scaleY = canvas.height / SOURCE_CANVAS_HEIGHT;
+            const last = rawPoints[rawPoints.length - 1];
+            return { x: last.x * scaleX, y: last.y * scaleY };
+        }
+
+        function drawWithMagenta() {
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 20;
+            ctx.lineCap = 'round';
+
+            // Deixa o modelo escalar — usa um valor moderado, 3.0 é o recomendado pela demo oficial
+            model.setPixelFactor(3.0);
+
+            let rnn_state = model.zeroState();
+            let [dx, dy, pen_down, pen_up, pen_end] = model.zeroInput();
+            let prev_pen = [1, 0, 0];
+
+            const userStrokes = pointsToStrokes(inputPoints);
+            const { x: startX, y: startY } = getStartingPosition(inputPoints);
+            let x = startX;
+            let y = startY;
+
+            if (userStrokes.length > 0) {
+                setStatus(`The AI is "reading" your drawing (${userStrokes.length} simplified strokes)...`);
+                for (const stroke of userStrokes) {
+                    // Os deltas aqui ainda estão em pixels "brutos" do teu canvas grande;
+                    // o pixelFactor do modelo trata da escala internamente.
+                    rnn_state = model.update(stroke, rnn_state);
+                    [dx, dy, pen_down, pen_up, pen_end] = stroke;
+                }
+                prev_pen = [pen_down, pen_up, pen_end];
+            } else {
+                console.warn('No user strokes received — the AI will generate from scratch.');
+            }
+
+            setStatus('The AI is continuing your drawing...');
+
+            const temperature = 0.2; // um pouco mais baixo = menos caótico, mais fiel ao contexto
+            const MAX_STEPS = 350;
+            let step = 0;
+
+            function drawStep() {
+                if (prev_pen[2] === 1) {
+                    setStatus('The AI has finished the drawing!');
+                    applyBtn.disabled = false;
+                    regenerateBtn.disabled = false;
+                    return;
+                }
+                if (step >= MAX_STEPS) {
+                    setStatus('The AI has finished the drawing (step limit reached).');
+                    applyBtn.disabled = false;
+                    regenerateBtn.disabled = false;
+                    return;
+                }
+                step++;
+
+                rnn_state = model.update([dx, dy, pen_down, pen_up, pen_end], rnn_state);
+                const pdf = model.getPDF(rnn_state, temperature);
+                [dx, dy, pen_down, pen_up, pen_end] = model.sample(pdf);
+
+                if (prev_pen[0] === 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + dx, y + dy);
+                    ctx.stroke();
+                }
+
+                x += dx;
+                y += dy;
+
+                prev_pen = [pen_down, pen_up, pen_end];
+                requestAnimationFrame(drawStep);
+            }
+
+            drawStep();
+        }
+
+        async function run() {
+            const ok = await loadInputDrawing();
+            if (!ok) return;
+
+            const name = normalizeCategoryName(inputLabel);
+
+            try {
+                await loadModel(name);
+                drawWithMagenta();
+            } catch (err) {
+                console.error(err);
+                setStatus(`The AI doesn't know how to draw "${name}" yet. Try: cat, flower, dog, face, butterfly, spider.`);
+            }
+        }
+
+        regenerateBtn.addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            applyBtn.disabled = true;
+            regenerateBtn.disabled = true;
+            loadInputDrawing().then(() => drawWithMagenta());
+        });
+
+        applyBtn.addEventListener('click', () => {
+            const resultDataUrl = canvas.toDataURL('image/png');
+            localStorage.setItem('magenta_output_canvas', resultDataUrl);
+            setStatus('Copied! Go back to the Paint tab — it will be applied automatically.');
+            applyBtn.disabled = true;
+        });
+
+        // Inicializa o fundo branco antes de tudo
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        run();
+    </script>
+</body>
+</html>
