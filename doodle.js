@@ -34,7 +34,7 @@ async function updateDoodleColors() {
 
         // Se for uma categoria nova, atualiza o histórico
         lastLabel = label;
-        updateFeatureSuggestions(label);
+        updateFeatureSuggestions(label, confidence);
 
         
         // limpar as sugestões da query anterior para não causar confusão.
@@ -54,11 +54,11 @@ async function updateDoodleColors() {
     }
 }
 
-async function updateFeatureSuggestions(label) {
+async function updateFeatureSuggestions(label, confidence) {
     // limpar as sugestões da query anterior para não causar confusão.
     document.querySelector('#doodleFeatures').textContent = 'Loading Suggestions...';
 
-    const raw = await askAIForFeatures(3, label);
+    const raw = await askAIForFeatures(3, label, confidence);
     const features = raw.split(/[\n,]/)
             .map(c => c.trim());
 

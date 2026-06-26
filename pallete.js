@@ -39,7 +39,7 @@ export async function askAI(number, context) {
     return data.message.content;
 }
 
-export async function askAIForFeatures(number, context) {
+export async function askAIForFeatures(number, context, confidence) {
     const preferenceHint = buildPreferenceHint(context, number);
 
     const res = await fetch('http://localhost:11434/api/chat', {
@@ -61,7 +61,7 @@ export async function askAIForFeatures(number, context) {
                     role: 'user',
                     content:
                         `${preferenceHint}` +
-                        `Generate ${number} distinct features related to this scene: "${context}". ` +
+                        `Generate ${number} distinct features related to this scene: "${context}" with ${confidence}% confidence. ` +
                         `The features should be parts of an object or a scene, that a painter might need to draw if they were to draw the object or scene.` +
                         `Each individual feature should be wholly different from all other features, and not simply a similar one.` +
                         `Prefer to suggest simple features that could be easily doodled and not complex concepts.` +
