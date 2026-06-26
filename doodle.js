@@ -1,10 +1,10 @@
 import { getPaintCanvas, getPaintInitialDataUrl, getPaintDataUrl } from './paint.js';
-import { askAI, normalizeHex, paintSelectSuggestedColor } from './pallete.js';
+import { askAI, askAIForFeatures, normalizeHex, paintSelectSuggestedColor } from './pallete.js';
 
 let classifier = null;
 let doodleTimeout = null; // Substitui o interval por um temporizador dinâmico (Debounce)
 let lastLabel = '';       // Guarda a última categoria para evitar chamadas duplicadas à IA
-const DEBOUNCE_DELAY_MS = 300; // 0.3 segundos de espera após largar o pincel
+const DEBOUNCE_DELAY_MS = 1000; // 1 segundos de espera após largar o pincel
 
 ml5.imageClassifier('DoodleNet').then(c => {
     classifier = c;
@@ -34,7 +34,11 @@ async function updateDoodleColors() {
 
         // Se for uma categoria nova, atualiza o histórico
         lastLabel = label;
+        updateFeatureSuggestions(label);
 
+        
+        // limpar as sugestões da query anterior para não causar confusão.
+        document.querySelector('#doodleColorsHex').textContent = 'Loading Colors...'
         // Executa a chamada à tua IA local
         const raw = await askAI(2, label);
         const colors = raw.split(/[\n,]/)
@@ -49,6 +53,20 @@ async function updateDoodleColors() {
         console.warn('Doodle suggestion failed:', err);
     }
 }
+
+async function updateFeatureSuggestions(label) {
+    // limpar as sugestões da query anterior para não causar confusão.
+    document.querySelector('#doodleFeatures').textContent = 'Loading Suggestions...';
+
+    const raw = await askAIForFeatures(3, label);
+    const features = raw.split(/[\n,]/)
+            .map(c => c.trim());
+
+    if (features.length === 0) return;
+
+    document.querySelector('#doodleFeatures').textContent = 'Suggested Features:' + features;
+}
+
 
 function renderDoodleColors(colors) {
     const container = document.querySelector('#doodleOutput');
