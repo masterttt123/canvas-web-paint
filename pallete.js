@@ -73,7 +73,7 @@ async function askForColor(number, context) {
         feedbackLocked: false
     };
 
-    document.querySelector('#paintColorsHex').textContent = colors.join(', ');
+    // document.querySelector('#paintColorsHex').textContent = colors.join(', ');
 
     const paintOutput = document.querySelector('#paintOutput');
     paintOutput.innerHTML = '';

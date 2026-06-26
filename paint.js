@@ -74,7 +74,7 @@ let webcamStream = null; // Guarda o fluxo da câmara para o podermos desligar d
 
 // --- Definição do tamanho fixo estilo MS Paint ---
 const CANVAS_BASE_WIDTH = 800;
-const CANVAS_BASE_HEIGHT = 450;
+const CANVAS_BASE_HEIGHT = 600;
 
 
 const paintQuality = 2;
@@ -191,12 +191,6 @@ export function paintInit(startDoodleSuggestions) {
     window.addEventListener('resize', paintReSize);
     paintContainer.addEventListener('resize', paintReSize);
 
-    paintBrushRange.addEventListener('input', () => {
-        const val = typeof paintBrushRange.value === 'string' ? parseInt(paintBrushRange.value) : paintBrushRange.value;
-        paintBrushSize[paintCurrentTool] = val;
-        paintSizeVal.innerHTML = val;
-        paintCtx.lineWidth = val;
-    });
 
     paintColorInput.addEventListener('change', paintPickColor);
     paintColorInput.addEventListener('input', paintPickColor);

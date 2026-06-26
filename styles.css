@@ -113,8 +113,8 @@
 
 #paintButtons {
   display: flex;
-  gap: 10px;
-  margin-top: 15px;
+  gap: 6px;
+  margin-top: 8px;
   align-content: center;
   justify-content: center;
   align-items: center;
@@ -135,8 +135,8 @@
   color: #000;
   text-decoration: none;
   box-sizing: border-box;
-  padding: 4px;
-  font-size: 15px;
+  padding: 5px;
+  font-size: 13px;
 }
 
 #paintButtons button:hover,
@@ -161,11 +161,12 @@
 
 #paintSize {
   display: block;
-  margin: 7px 0;
-  padding: 15px;
+  margin: 2px 0;
+  padding: 6px;
   text-align: center;
   width: 100%;
   box-sizing: border-box;
+  font-size: 13px;
 }
 
 #paintContainer {
@@ -176,16 +177,19 @@
 }
 
 #paintToolBar {
-  width: 260px;
+  width: 220px;
   position: absolute;
-  top: 15px;
-  left: 15px;
-  max-width: calc(100% - 50px);
+  top: 10px;
+  left: 10px;
+  max-width: calc(100% - 30px);
+  max-height: calc(100% - 20px);
+  overflow-y: auto; 
   box-shadow: 0 0 #0000, 0 0 #0000, 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   background-color: rgb(238, 241, 255);
-  border-radius: 15px;
+  border-radius: 10px;
   overflow: hidden;
-  padding: 15px;
+  padding: 10px;
+  z-index: 10;
 }
 
 #paintTools {
@@ -200,7 +204,7 @@
 
 #paintTools span {
   cursor: pointer;
-  padding: 10px 5px;
+  padding: 6px 4px;
   text-align: left;
   transition: 0.15s;
   width: 100%;
@@ -212,7 +216,7 @@
   background: #333c4d;
   --color: #fff;
   margin: 0;
-  font-size: 15px;
+  font-size: 12px;
   color: var(--color);
 }
 
@@ -263,9 +267,9 @@
 #paintColors span {
   background: white;
   cursor: pointer;
-  height: 36px;
+  height: 26px;
   transition: 0.1s;
-  width: 29px;
+  width: 23px;
   margin: 1px;
 }
 
@@ -278,7 +282,7 @@
 
 #paintPicker {
   flex: none;
-  width: 50px;
+  width: 45px;
   color: #fff;
   background: #333c4d;
   border-radius: 4px;
@@ -286,7 +290,7 @@
 }
 
 #paintPicker label {
-  font-size: 14px;
+  font-size: 11px;
   margin: 0;
 }
 
@@ -294,29 +298,37 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  height: 50px;
+  height: 35px;
   padding: 0;
   width: 100%;
 }
 
 .paintBtn {
   position: absolute;
-  z-index: 2;
+  z-index: 20;
   background-color: #333c4d;
-  top: 4px;
-  left: 4px;
+  top: 12px;
+  left: 7px;
   border-radius: 100%;
-  width: 24px;
-  height: 24px;
-  padding: 4px;
-  display: block;
+  
+  width: 14px;   
+  height: 14px;  
+  padding: 3px; 
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
   margin: 0;
   box-sizing: content-box;
+  cursor: pointer;
 }
 
 .paintBtn svg {
   fill: #fff;
   display: none;
+  width: 16px !important;  
+  height: 16px !important; 
 }
 
 .paintBtn.show .swap-off {
@@ -344,16 +356,21 @@
 
 #promptDrawPanel {
   max-width: 1100px;
-  margin: 12px auto 0;
-  padding: 12px 16px;
+  margin: 0 auto 6px;
+  padding: 6px 16px;
   background: #eef1ff;
   border: 1px solid #c7d0f5;
-  border-radius: 14px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 15px;
 }
 
 #promptDrawPanel h2 {
-  margin: 0 0 8px;
-  font-size: 18px;
+  margin: 0;
+  font-size: 15px; 
+  white-space: nowrap;
 }
 
 #promptDrawPanel p {
@@ -361,29 +378,34 @@
   font-size: 14px;
 }
 
+
 #promptDrawForm {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
+  flex: 1;
+  max-width: 600px;
 }
 
 #promptDrawInput {
   flex: 1 1 320px;
   min-width: 220px;
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
   border: 1px solid #9aa7d8;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 #promptDrawForm button {
-  padding: 10px 14px;
-  border-radius: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
   border: 1px solid #2f3a5f;
   background: #333c4d;
   color: #fff;
   cursor: pointer;
   font-weight: bold;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 #promptDrawForm button:hover {
@@ -391,8 +413,25 @@
 }
 
 #promptDrawStatus {
+  margin: 0;
+  font-size: 13px;
   margin-top: 10px;
   min-height: 20px;
   font-size: 14px;
   color: #233;
+  white-space: nowrap;
+}
+
+#autocompleteBtn, 
+#webcamToggleBtn {
+  padding: 6px !important; 
+  font-size: 12px !important;
+  margin: 4px 0 !important;
+}
+
+#paintWebcamCon canvas, 
+#paintWebcam {
+  width: 100% !important;
+  height: auto !important;
+  border-radius: 4px;
 }

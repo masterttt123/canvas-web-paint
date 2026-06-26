@@ -66,13 +66,15 @@
                     <span class="active-tool" data-name="brush"><i></i> Pen</span>
                     <span data-name="eraser"><i></i> Eraser</span>
                 </div>
-                <div id="paintSize">
+                <!-- <div id="paintSize">
                     <label for="paintSizeRange">Size</label>
                     <div class="paintRangeSlider">
                         <input id="paintSizeRange" max="500" min="1" type="range" value="72">
                         <div id="paintSizeVal">72</div>
                     </div>
-                </div>
+                </div> -->
+                
+                <hr style="margin: 8px 0; opacity: 0.3;">
                 <div id="paintColorCon">
                     <div id="paintColors">
                         <span class="active-color" data-color="black" style="background-color: black;"></span>
@@ -110,7 +112,7 @@
                 </form>
                 
                 <hr style="margin: 8px 0; opacity: 0.3;">
-                <p style="margin: 4px 0; font-size: 12px; opacity: 0.7;">Doodle for canvas: <span id="doodleLabel">—</span></p>
+                <p style="margin: 2px 0; font-size: 12px; opacity: 0.7;">Doodle for canvas: <span id="doodleLabel">—</span></p>
                 <div id="doodleOutput"></div>
                 <p id="doodleColorsHex" style="font-size: 11px; opacity: 0.6;"></p>
                 <button id="autocompleteBtn" type="button" style="width: 50%; padding: 10px; margin: 8px 0; background-color: #ff0077; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
@@ -119,12 +121,12 @@
                     
                 <hr style="margin: 8px 0; opacity: 0.3;">
                 <div id="paintWebcamCon" style="margin-top: 10px; text-align: center;">
-                    <p style="margin: 4px 0; font-size: 12px; opacity: 0.7;">Webcam</p>
+                    <p style="margin: 2px 0; font-size: 12px; opacity: 0.7;">Webcam</p>
                     <button id="webcamToggleBtn" type="button" style="width: 50%; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background 0.2s;">
                         Turn on Webcam
                     </button>
                     <video id="paintWebcam" autoplay playsinline style="width: 100%; max-width: 100%; margin-top: 8px; border-radius: 4px; display: none; transform: scaleX(-1); border: 1px solid #ccc; background-color: #000;"></video>
-                    <p style="margin: 4px 0; font-size: 12px; opacity: 0.7;">Doodle for webcam: <span id="doodleLabel2">—</span></p>
+                    <p style="margin: 2px 0; font-size: 12px; opacity: 0.7;">Doodle for webcam: <span id="doodleLabel2">—</span></p>
                 </div>
 
 
