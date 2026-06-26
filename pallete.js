@@ -39,6 +39,44 @@ export async function askAI(number, context) {
     return data.message.content;
 }
 
+export async function askAIForFeatures(number, context, confidence) {
+    const preferenceHint = buildPreferenceHint(context, number);
+
+    const res = await fetch('http://localhost:11434/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            model: 'llama3.1',
+            stream: false,
+            options: {
+                temperature: 0.9,
+                seed: Math.floor(Math.random() * 100000)
+            },
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are a drawing assistant. Return only up to 3 words to describe each feature requested of you. Prefer to use the least words possible. Respect all inclusion and exclusion rules similar.'
+                },
+                {
+                    role: 'user',
+                    content:
+                        `${preferenceHint}` +
+                        `Generate ${number} distinct features related to this scene: "${context}" with ${confidence}% confidence. ` +
+                        `The features should be parts of an object or a scene, that a painter might need to draw if they were to draw the object or scene.` +
+                        `Each individual feature should be wholly different from all other features, and not simply a similar one.` +
+                        `Prefer to suggest simple features that could be easily doodled and not complex concepts.` +
+                        `Output only the features, comma-separated, no spaces.`
+                }
+            ]
+        })
+    });
+
+    console.log(`Asked for ${number} features related to "${context}"`);
+
+    const data = await res.json();
+    return data.message.content;
+}
+
 async function askForColor(number, context) {
     const prefs = getContextPreferences(context);
 

@@ -1,10 +1,10 @@
 import { getPaintCanvas, getPaintInitialDataUrl, getPaintDataUrl } from './paint.js';
-import { askAI, normalizeHex, paintSelectSuggestedColor } from './pallete.js';
+import { askAI, askAIForFeatures, normalizeHex, paintSelectSuggestedColor } from './pallete.js';
 
 let classifier = null;
 let doodleTimeout = null; // Substitui o interval por um temporizador dinâmico (Debounce)
 let lastLabel = '';  
-const DEBOUNCE_DELAY_MS = 300; // 0.3 segundos de espera após largar o pincel
+const DEBOUNCE_DELAY_MS = 300; // 0.3   segundos de espera após largar o pincel
 let lastWebcamLabel = '';
 let p5WebcamInstance = null;
 
@@ -35,6 +35,7 @@ export async function updateDoodleColors() {
         }
 
         lastLabel = label;
+        updateFeatureSuggestions(label, confidence);
 
         const raw = await askAI(2, label);
         const colors = raw.split(/[\n,]/)
@@ -49,6 +50,20 @@ export async function updateDoodleColors() {
         console.warn('Doodle suggestion failed:', err);
     }
 }
+
+async function updateFeatureSuggestions(label, confidence) {
+    // limpar as sugestões da query anterior para não causar confusão.
+    document.querySelector('#doodleFeatures').textContent = 'Loading Suggestions...';
+
+    const raw = await askAIForFeatures(3, label, confidence);
+    const features = raw.split(/[\n,]/)
+            .map(c => c.trim());
+
+    if (features.length === 0) return;
+
+    document.querySelector('#doodleFeatures').textContent = 'Suggested Features:' + features;
+}
+
 
 function renderDoodleColors(colors) {
     const container = document.querySelector('#doodleOutput');
