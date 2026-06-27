@@ -54,8 +54,6 @@ class EventEmitter {
     }
 }
 
-const paintBrushRange = document.querySelector('#paintSizeRange');
-const paintSizeVal = document.querySelector('#paintSizeVal');
 const paintContainer = document.querySelector('#paintContainer');
 const paintAdd = document.querySelector('#paintAdd');
 const paintCanvas = document.querySelector('#paintDraw');
@@ -237,11 +235,8 @@ export function paintInit(startDoodleSuggestions) {
 }
 
 function paintReSize() {
-    // Como o tamanho agora é fixo, JÁ NÃO apagamos nem alteramos o tamanho do canvas!
-    // Apenas garantimos que as propriedades do pincel não se perdem.
     paintCtx.lineWidth = paintBrushSize[paintCurrentTool];
-    paintSizeVal.innerHTML = paintBrushSize[paintCurrentTool];
-    paintBrushRange.value = paintBrushSize[paintCurrentTool];
+
     paintCtx.lineCap = paintCurrentLineCap;
     paintCtx.strokeStyle = paintCurrentTool === 'eraser' ? paintBackground : paintCurrentColor;
     paintCycles = 0;
@@ -325,8 +320,7 @@ function paintPickColor() {
 function paintSetTool() {
     paintCurrentTool = this.dataset.name;
     paintCtx.lineWidth = paintBrushSize[paintCurrentTool];
-    paintSizeVal.innerHTML = paintBrushSize[paintCurrentTool];
-    paintBrushRange.value = paintBrushSize[paintCurrentTool];
+
     paintTools.forEach((tool) =>
         tool === this
             ? tool.classList.add('active-tool')

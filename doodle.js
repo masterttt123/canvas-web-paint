@@ -141,7 +141,7 @@ function initP5WebcamLoop() {
             p.pop();
 
             // 4. 🔥 Filtro Threshold nativo do p5.js aplicado em tempo real no ecrã e nos dados
-            p.filter(p.THRESHOLD, 0.65);
+            p.filter(p.THRESHOLD, 0.45);
 
             // 2 sec
             let currentTime = p.millis();
