@@ -2,7 +2,7 @@ import { getPaintCanvas, getPaintInitialDataUrl, getPaintDataUrl } from './paint
 import { askAI, askAIForFeatures, normalizeHex, paintSelectSuggestedColor } from './pallete.js';
 
 let classifier = null;
-let doodleTimeout = null; // Substitui o interval por um temporizador dinâmico (Debounce)
+let doodleTimeout = null; 
 let lastLabel = '';  
 const DEBOUNCE_DELAY_MS = 300; // 0.3   segundos de espera após largar o pincel
 let lastWebcamLabel = '';
@@ -96,7 +96,8 @@ function initP5WebcamLoop() {
 
         p.setup = () => {
             p5Canvas = p.createCanvas(500/2, 384/2);
-            p5Canvas.parent('paintWebcamCon'); 
+            // p5Canvas.parent('paintWebcamCon'); 
+            p5Canvas.hide(); 
         };
 
         p.draw = () => {
@@ -108,18 +109,18 @@ function initP5WebcamLoop() {
             }
 
             // Remove original webcam 
-            if (webcamEl.style.opacity !== '0') {
+            /* if (webcamEl.style.opacity !== '0') {
                 webcamEl.style.position = 'absolute';
                 webcamEl.style.opacity = '0';
                 webcamEl.style.pointerEvents = 'none';
-            }
+            } */
 
             p.background(255);
 
             const videoW = webcamEl.videoWidth;
             const videoH = webcamEl.videoHeight;
 
-            // 2. Algoritmo manual de "Object-Fit: Cover" para manter o rácio 1000x768 perfeito sem achatar
+            // ratio
             const videoRatio = videoW / videoH;
             const targetRatio = p.width / p.height;
             
@@ -133,14 +134,14 @@ function initP5WebcamLoop() {
                 sy = (videoH - sh) / 2;
             }
 
-            // 3. Desenha o frame da câmara invertido (efeito espelho igual ao MS Paint)
+            // drawImage
             p.push();
             p.translate(p.width, 0);
             p.scale(-1, 1);
             p.drawingContext.drawImage(webcamEl, sx, sy, sw, sh, 0, 0, p.width, p.height);
             p.pop();
 
-            // 4. 🔥 Filtro Threshold nativo do p5.js aplicado em tempo real no ecrã e nos dados
+            // Threshold filter
             p.filter(p.THRESHOLD, 0.45);
 
             // 2 sec
